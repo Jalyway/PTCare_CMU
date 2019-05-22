@@ -22,9 +22,9 @@ public class UploadRec extends AppCompatActivity implements View.OnClickListener
     private UploadFile mUpload;
     private String SERVER_URL = "http://140.128.65.114:8000/PRRFISHome/PTC/uploadc.jsp"; //POST網址
     //
-    ImageView iv_Attachment;
-    Button btn_Upload;
-    TextView tv_FileName;
+    private ImageView iv_Attachment;
+    private Button btn_Upload;
+    private TextView tv_FileName;
     PowerManager.WakeLock wakeLock;
 
     @Override
@@ -33,8 +33,8 @@ public class UploadRec extends AppCompatActivity implements View.OnClickListener
         setContentView(R.layout.uploadrec);
         //
         iv_Attachment = findViewById(R.id.ivAttachment);
-        btn_Upload = (Button) findViewById(R.id.b_upload);
-        tv_FileName = (TextView) findViewById(R.id.tv_file_name);
+        btn_Upload = findViewById(R.id.btn_upload);
+        tv_FileName = findViewById(R.id.tv_fileName);
         iv_Attachment.setOnClickListener(this);
         btn_Upload.setOnClickListener(this);
     }
@@ -42,38 +42,35 @@ public class UploadRec extends AppCompatActivity implements View.OnClickListener
     @Override
     public void onClick(View v) {
         if (v == iv_Attachment) {
-            //on attachment icon click
+            // on attachment icon click
             showFileChooser();
         }
         if (v == btn_Upload) {
-            //on upload button Click
+            // on upload button Click
             if (selectedFilePath != null) {
                 // dialog = ProgressDialog.show(MainActivity.this, "", "Uploading File...", true);
                 mUpload = new UploadFile(getApplicationContext(), UploadRec.this);
-                mUpload.execute(SERVER_URL, selectedFilePath); //傳入URL,檔案路徑
+                mUpload.execute(SERVER_URL, selectedFilePath);  //傳入URL,檔案路徑
                 mUpload.delegate = UploadRec.this;
-            } else {
-                Toast.makeText(UploadRec.this, "Please choose a File First", Toast.LENGTH_SHORT).show();
             }
-
+            else
+                Toast.makeText(UploadRec.this, "Please choose a File First", Toast.LENGTH_SHORT).show();
         }
     }
 
     //
     private void showFileChooser() {
-
         Intent intent = new Intent();
-        //sets the select file to all types of files
+        // sets the select file to all types of files
         intent.setType("text/plain"); // file/* 改
-        //  intent.setType("*/*"); // file/* 改
+        // intent.setType("*/*"); // file/* 改
         intent.addCategory(Intent.CATEGORY_OPENABLE);
-        //allows to select data and return it
+        // allows to select data and return it
         intent.setAction(Intent.ACTION_GET_CONTENT);
-        //starts new activity to select file and return data
+        // starts new activity to select file and return data
         startActivityForResult(Intent.createChooser(intent, "Choose File to Upload.."), PICK_FILE_REQUEST);
-
     }
-    //
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -89,25 +86,25 @@ public class UploadRec extends AppCompatActivity implements View.OnClickListener
                 wakeLock.acquire();
 
                 Uri selectedFileUri = data.getData();
-                //   Toast.makeText(this, selectedFileUri.toString(), Toast.LENGTH_LONG).show();
+                //Toast.makeText(this, selectedFileUri.toString(), Toast.LENGTH_LONG).show();
 
                 selectedFilePath = FilePath.getPath(this, selectedFileUri);
                 Log.i(TAG, "Selected File Path:" + selectedFilePath);
 
-                if (selectedFilePath != null && !selectedFilePath.equals("")) {
+                if (selectedFilePath!=null && !selectedFilePath.equals("")) {
                     String filename = selectedFilePath.substring(selectedFilePath.lastIndexOf("/") + 1);
-                    tv_FileName.setText(filename); //只顯示檔名
-                } else {
-                    Toast.makeText(this, "Cannot upload file to server ", Toast.LENGTH_LONG).show();
+                    tv_FileName.setText(filename);  //只顯示檔名
                 }
+                else
+                    Toast.makeText(this, "Cannot upload file to server ", Toast.LENGTH_LONG).show();
+
                 wakeLock.release();
             }
         }
     }
+
     @Override
     public void processFinish(String output){
-        Toast.makeText(getApplicationContext(),
-                "資料上傳完成", Toast.LENGTH_SHORT).show();
-
+        Toast.makeText(getApplicationContext(), "資料上傳完成", Toast.LENGTH_SHORT).show();
     }
 }

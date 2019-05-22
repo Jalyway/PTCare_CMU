@@ -67,19 +67,33 @@ public class ViewRecord extends AppCompatActivity {
             i++;
         }
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this,R.layout.support_simple_spinner_dropdown_item,sprCriteria[0]);
-        sp.setAdapter(adapter);
-        sp.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                selectID = position;
-            }
+        ArrayAdapter<String> adapter;
+        if (sprCriteria[0].length != 0) {
+            adapter = new ArrayAdapter<>(this,R.layout.support_simple_spinner_dropdown_item,sprCriteria[0]);
+            sp.setAdapter(adapter);
+            sp.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    selectID = position;
+                }
 
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-                selectID = Integer.valueOf(sprCriteria[1][0]);
-            }
-        });
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {
+                    selectID = Integer.valueOf(sprCriteria[1][0]);
+                }
+            });
+        }
+        else {
+            adapter = new ArrayAdapter<>(this,R.layout.support_simple_spinner_dropdown_item,new String[]{"無任何準則資料"});
+            sp.setAdapter(adapter);
+            sp.setEnabled(false);
+
+            createCriteria.setEnabled(false);
+            record2Csv.setEnabled(false);
+            showTable.setEnabled(false);
+        }
+
+
     }
 
     // Listener for buttons click

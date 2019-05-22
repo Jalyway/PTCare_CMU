@@ -6,10 +6,11 @@
 
     <TextView
         android:id="@+id/mName"
-        android:layout_width="72dp"
+        android:layout_width="70dp"
         android:layout_height="match_parent"
         android:layout_weight="0"
-        android:gravity="center_vertical" />
+        android:gravity="center_vertical"
+        android:textSize="12sp" />
 
     <TextView
         android:id="@+id/mDesc"
@@ -21,9 +22,10 @@
 
     <TextView
         android:id="@+id/mCode"
-        android:layout_width="20dp"
+        android:layout_width="18dp"
         android:layout_height="match_parent"
-        android:layout_weight="0.5"
+        android:layout_weight="0"
         android:gravity="center_vertical"
-        android:textAlignment="center" />
+        android:textAlignment="center"
+        android:textSize="10sp" />
 </LinearLayout>
