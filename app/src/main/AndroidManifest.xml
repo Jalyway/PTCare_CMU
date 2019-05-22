@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.ptcare_cmu">
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.BLUETOOTH"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+        <activity android:name=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".EditMotion"  android:label="新增動作" />
+        <activity android:name=".ShowMotion"  android:label="檢視動作" />
+        <activity android:name=".ModifyMotion" android:label="修改動作" />
+        <activity android:name=".EditCriteria" android:label="編輯準則" />
+        <activity android:name=".ShowCriteria" android:label="準則資訊"/>
+        <activity android:name=".ViewRecord"  android:label="特徵" />
+        <activity android:name=".UploadRec" android:label="上傳檔案" />
+        <activity android:name=".BluetoothMonitor" android:label="藍芽裝置偵測" />
+    </application>
+
+</manifest>
