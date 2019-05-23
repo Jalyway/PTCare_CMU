@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
                     startActivity(new Intent(getApplicationContext(), EditMotion.class));  //動作
                     break;
                 case R.id.imageButton2:
-                    startActivity(new Intent(getApplicationContext(), BluetoothMonitor.class));
+                    startActivity(new Intent(getApplicationContext(), DataBleMonitor.class));
                     break;
                 case R.id.imageButton3:
                     startActivity(new Intent(getApplicationContext(), EditCriteria.class));  //準則
