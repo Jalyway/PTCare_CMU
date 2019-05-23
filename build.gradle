@@ -18,7 +18,10 @@ allprojects {
     repositories {
         google()
         jcenter()
-        
+        ivy {
+            url "https://mbientlab.com/releases/ivyrep"
+            layout "gradle"
+        }
     }
 }
 
