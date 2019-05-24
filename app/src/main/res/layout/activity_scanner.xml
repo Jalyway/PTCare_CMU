@@ -49,10 +49,12 @@
         android:id="@+id/ble_scan_title"
         android:layout_gravity="center_horizontal" />
 
-    <fragment  android:id="@+id/scanner_fragment"
-              android:name="com.mbientlab.bletoolbox.scanner.BleScannerFragment"
-              tools:layout="@layout/blescan_device_list" android:layout_width="match_parent"
-              android:layout_height="match_parent" />
+    <fragment
+        android:id="@+id/scanner_fragment"
+        android:name="com.example.ptcare_cmu.BleScannerFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:layout="@layout/blescan_device_list" />
 
 
 </LinearLayout>
