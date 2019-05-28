@@ -1,4 +1,3 @@
-
 package com.example.ptcare_cmu;
 
 import android.Manifest;
@@ -19,13 +18,14 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.ParcelUuid;
-import android.app.Fragment;
+import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.mbientlab.bletoolbox.scanner.MacAddressEntryDialogFragment;
@@ -39,6 +39,7 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.UUID;
 
+
 /**
  * A simple {@link Fragment} subclass.
  * Activities that contain this fragment must implement the
@@ -47,16 +48,25 @@ import java.util.UUID;
  * Use the {@link BleScanner#newInstance} factory method to
  * create an instance of this fragment.
  */
+
+
+
 public class BleScanner extends Fragment {
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
+
+    // TODO: Rename and change types of parameters
+    private String mParam1;
+    private String mParam2;
+
     //
-    public static final long DEFAULT_SCAN_PERIOD= 5000L;
+    public static final long DEFAULT_SCAN_PERIOD= 5000;
     private static final int REQUEST_ENABLE_BT = 1, PERMISSION_REQUEST_COARSE_LOCATION= 2;
 
     TextView txtChange;
+    ProgressBar processBar;
     private ScannedDeviceInfoAdapter scannedDevicesAdapter;
     private Button scanControl;
     private Handler mHandler;
@@ -65,12 +75,9 @@ public class BleScanner extends Fragment {
     private HashSet<UUID> filterServiceUuids;
     private HashSet<ParcelUuid> api21FilterServiceUuids;
     private boolean isScanReady;
-    private com.mbientlab.bletoolbox.scanner.BleScannerFragment.ScannerCommunicationBus commBus= null;
-    //
+    private com.example.ptcare_cmu.BleScanner.ScannerCommunicationBus commBus= null;
 
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+    //
 
     private OnFragmentInteractionListener mListener;
 
@@ -103,13 +110,14 @@ public class BleScanner extends Fragment {
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
+        //
         final Activity owner= getActivity();
-        if (!(owner instanceof com.mbientlab.bletoolbox.scanner.BleScannerFragment.ScannerCommunicationBus)) {
+        if (!(owner instanceof com.example.ptcare_cmu.BleScanner.ScannerCommunicationBus)) {
             throw new ClassCastException(String.format(Locale.US, "%s %s", owner.toString(),
                     owner.getString(R.string.error_scanner_listener)));
         }
 
-        commBus= (com.mbientlab.bletoolbox.scanner.BleScannerFragment.ScannerCommunicationBus) owner;
+        commBus= (com.example.ptcare_cmu.BleScanner.ScannerCommunicationBus) owner;
         btAdapter= ((BluetoothManager) owner.getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter();
 
         if (btAdapter == null) {
@@ -130,41 +138,31 @@ public class BleScanner extends Fragment {
             isScanReady = true;
         }
 
-
     }
+    //
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode) {
+            case REQUEST_ENABLE_BT:
+                if (resultCode == Activity.RESULT_CANCELED) {
+                    getActivity().finish();
+                } else {
+                    startBleScan();
+                }
+                break;
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+    //
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
         scannedDevicesAdapter= new ScannedDeviceInfoAdapter(getActivity(), R.id.blescan_entry_layout);
         scannedDevicesAdapter.setNotifyOnChange(true);
         mHandler = new Handler();
-        return inflater.inflate(R.layout.blescan_device_list, container);
-    }
-
-    // TODO: Rename method, update argument and hook method into UI event
-    public void onButtonPressed(Uri uri) {
-        if (mListener != null) {
-            mListener.onFragmentInteraction(uri);
-        }
-    }
-
-    @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-        if (context instanceof OnFragmentInteractionListener) {
-            mListener = (OnFragmentInteractionListener) context;
-        } else {
-            throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
-        }
-    }
-
-    @Override
-    public void onDetach() {
-        super.onDetach();
-        mListener = null;
+        View view=inflater.inflate(R.layout.fragment_ble_scanner, container,false);
+        return view;
     }
 
     //
@@ -194,8 +192,10 @@ public class BleScanner extends Fragment {
                 commBus.onDeviceSelected(scannedDevicesAdapter.getItem(i).btDevice);
             }
         });
-        txtChange = getActivity().findViewById(R.id.ble_scan_title);
+
         scanControl= (Button) view.findViewById(R.id.blescan_control);
+        txtChange=view.findViewById(R.id.ble_scan_title);
+        processBar=view.findViewById(R.id.processBar);
         scanControl.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -212,81 +212,18 @@ public class BleScanner extends Fragment {
         }
     }
     //
+
     @Override
     public void onDestroyView() {
         stopBleScan();
         super.onDestroyView();
     }
-    //
+
     private BluetoothAdapter.LeScanCallback deprecatedScanCallback= null;
     private ScanCallback api21ScallCallback= null;
-    //
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        switch (requestCode) {
-            case REQUEST_ENABLE_BT:
-                if (resultCode == Activity.RESULT_CANCELED) {
-                    getActivity().finish();
-                } else {
-                    startBleScan();
-                }
-                break;
-        }
-        super.onActivityResult(requestCode, resultCode, data);
-    }
-    //
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-        switch (requestCode) {
-            case PERMISSION_REQUEST_COARSE_LOCATION: {
-                if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-                    new MacAddressEntryDialogFragment().show(getFragmentManager(), "mac_address_entry");
-                } else {
-                    isScanReady= true;
-                    startBleScan();
-                }
-            }
-        }
-    }
 
     //
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     * <p>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
-     */
-    public interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
-        void onFragmentInteraction(Uri uri);
-    }
 
-    public interface ScannerCommunicationBus {
-        /**
-         * Retrieve an array of allowed service UUIDs.  If no filtering should be done, return null.
-         * @return Service UUIDs to scan for, null if all discovered devices should be shown
-         */
-        UUID[] getFilterServiceUuids();
-
-        /**
-         * Retrieve how long to scan for Bluetooth LE devices.  Users can return {@link #DEFAULT_SCAN_PERIOD} if
-         * they do not want to set their own scan duration value
-         * @return Bluetooth LE scan duration, in milliseconds
-         */
-        long getScanDuration();
-
-        /**
-         * Called when the user has selected a Bluetooth device from the device list
-         * @param device Device the user selected
-         */
-        void onDeviceSelected(BluetoothDevice device);
-    }
-    //
     @TargetApi(22)
     public void startBleScan() {
         if (!checkLocationPermission()) {
@@ -296,14 +233,16 @@ public class BleScanner extends Fragment {
 
         scannedDevicesAdapter.clear();
         isScanning= true;
-        txtChange.setText("搜尋中...");
-        scanControl.setText(R.string.ble_scan_cancel);
+        txtChange.setText("搜尋中");
+        processBar.setVisibility(View.VISIBLE);
+        processBar.setProgress(-1);
+        scanControl.setEnabled(false);
         mHandler.postDelayed(new Runnable() {
             @Override
-            public void run() {
+            public void run()  {
                 stopBleScan();
             }
-        }, commBus.getScanDuration());
+        }, DEFAULT_SCAN_PERIOD);
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
             deprecatedScanCallback= new BluetoothAdapter.LeScanCallback() {
@@ -390,10 +329,8 @@ public class BleScanner extends Fragment {
             btAdapter.getBluetoothLeScanner().startScan(api21ScallCallback);
         }
     }
+    //
 
-    /**
-     * Stops the Bluetooth LE scan
-     */
     public void stopBleScan() {
         if (isScanning) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
@@ -403,10 +340,14 @@ public class BleScanner extends Fragment {
             }
 
             isScanning= false;
+            processBar.setVisibility(View.GONE);
+            processBar.setProgress(-1);
             txtChange.setText(R.string.select_metawear);
-            scanControl.setText(R.string.ble_scan);
+            scanControl.setEnabled(true);
         }
     }
+
+    //
 
     @TargetApi(23)
     private boolean checkLocationPermission() {
@@ -430,5 +371,68 @@ public class BleScanner extends Fragment {
             return false;
         }
         return true;
+    }
+
+    //
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case PERMISSION_REQUEST_COARSE_LOCATION: {
+                if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                    new MacAddressEntryDialogFragment().show(getActivity().getFragmentManager(), "mac_address_entry");
+                } else {
+                    isScanReady= true;
+                    startBleScan();
+                }
+            }
+        }
+    }
+
+    //
+
+    // TODO: Rename method, update argument and hook method into UI event
+    public void onButtonPressed(Uri uri) {
+        if (mListener != null) {
+            mListener.onFragmentInteraction(uri);
+        }
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        if (context instanceof OnFragmentInteractionListener) {
+            mListener = (OnFragmentInteractionListener) context;
+        } else {
+            throw new RuntimeException(context.toString()
+                    + " must implement OnFragmentInteractionListener");
+        }
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        mListener = null;
+    }
+
+    /**
+     * This interface must be implemented by activities that contain this
+     * fragment to allow an interaction in this fragment to be communicated
+     * to the activity and potentially other fragments contained in that
+     * activity.
+     * <p>
+     * See the Android Training lesson <a href=
+     * "http://developer.android.com/training/basics/fragments/communicating.html"
+     * >Communicating with Other Fragments</a> for more information.
+     */
+    public interface OnFragmentInteractionListener {
+        // TODO: Update argument type and name
+        void onFragmentInteraction(Uri uri);
+    }
+    //
+    public interface ScannerCommunicationBus {
+        UUID[] getFilterServiceUuids();
+        long getScanDuration();
+        void onDeviceSelected(BluetoothDevice device);
     }
 }

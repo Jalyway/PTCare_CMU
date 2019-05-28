@@ -4,7 +4,7 @@ import android.Manifest;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.Fragment;
+import android.support.v4.app.Fragment;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -29,8 +29,6 @@ import android.widget.TextView;
 import com.mbientlab.bletoolbox.scanner.MacAddressEntryDialogFragment;
 import com.mbientlab.bletoolbox.scanner.ScannedDeviceInfo;
 import com.mbientlab.bletoolbox.scanner.ScannedDeviceInfoAdapter;
-
-import org.w3c.dom.Text;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -67,7 +65,7 @@ public class BleScannerFragment extends Fragment{
     }
 
     /**
-     * Value that {@link com.mbientlab.bletoolbox.scanner.BleScannerFragment.ScannerCommunicationBus#getScanDuration getScanDuration} can return if users doesn't want to
+     * Value that {@link com.example.ptcare_cmu.BleScannerFragment.ScannerCommunicationBus#getScanDuration getScanDuration} can return if users doesn't want to
      * set their own scan duration value
      */
     public static final long DEFAULT_SCAN_PERIOD= 5000L;
@@ -82,10 +80,10 @@ public class BleScannerFragment extends Fragment{
     private HashSet<UUID> filterServiceUuids;
     private HashSet<ParcelUuid> api21FilterServiceUuids;
     private boolean isScanReady;
-    private com.mbientlab.bletoolbox.scanner.BleScannerFragment.ScannerCommunicationBus commBus= null;
+    private com.example.ptcare_cmu.BleScannerFragment.ScannerCommunicationBus commBus= null;
 
     /**
-     * Required empty public constructor.  Activities using this fragment must implement the {@link com.mbientlab.bletoolbox.scanner.BleScannerFragment.ScannerCommunicationBus} interface
+     * Required empty public constructor.  Activities using this fragment must implement the {@link com.example.ptcare_cmu.BleScannerFragment.ScannerCommunicationBus} interface
      */
     public BleScannerFragment() {
         // Required empty public constructor
@@ -96,12 +94,12 @@ public class BleScannerFragment extends Fragment{
         super.onCreate(savedInstanceState);
 
         final Activity owner= getActivity();
-        if (!(owner instanceof com.mbientlab.bletoolbox.scanner.BleScannerFragment.ScannerCommunicationBus)) {
+        if (!(owner instanceof com.example.ptcare_cmu.BleScannerFragment.ScannerCommunicationBus)) {
             throw new ClassCastException(String.format(Locale.US, "%s %s", owner.toString(),
                     owner.getString(R.string.error_scanner_listener)));
         }
 
-        commBus= (com.mbientlab.bletoolbox.scanner.BleScannerFragment.ScannerCommunicationBus) owner;
+        commBus= (com.example.ptcare_cmu.BleScannerFragment.ScannerCommunicationBus) owner;
         btAdapter= ((BluetoothManager) owner.getSystemService(Context.BLUETOOTH_SERVICE)).getAdapter();
 
         if (btAdapter == null) {
@@ -171,11 +169,12 @@ public class BleScannerFragment extends Fragment{
                 commBus.onDeviceSelected(scannedDevicesAdapter.getItem(i).btDevice);
             }
         });
-        txtChange = getActivity().findViewById(R.id.ble_scan_title);
+
         scanControl= (Button) view.findViewById(R.id.blescan_control);
         scanControl.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                txtChange = getActivity().findViewById(R.id.ble_scan_title);
                 if (isScanning) {
                     stopBleScan();
                 } else {
@@ -210,7 +209,7 @@ public class BleScannerFragment extends Fragment{
 
         scannedDevicesAdapter.clear();
         isScanning= true;
-        txtChange.setText("搜尋中...");
+//        txtChange.setText("搜尋中...");
         scanControl.setText(R.string.ble_scan_cancel);
         mHandler.postDelayed(new Runnable() {
             @Override
@@ -353,7 +352,7 @@ public class BleScannerFragment extends Fragment{
         switch (requestCode) {
             case PERMISSION_REQUEST_COARSE_LOCATION: {
                 if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-                    new MacAddressEntryDialogFragment().show(getFragmentManager(), "mac_address_entry");
+                    new MacAddressEntryDialogFragment().show(getActivity().getFragmentManager(), "mac_address_entry");
                 } else {
                     isScanReady= true;
                     startBleScan();

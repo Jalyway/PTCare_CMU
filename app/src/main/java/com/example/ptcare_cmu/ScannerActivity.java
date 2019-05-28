@@ -33,16 +33,17 @@ package com.example.ptcare_cmu;
 
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
+import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.KeyEvent;
 
-import com.mbientlab.bletoolbox.scanner.BleScannerFragment.ScannerCommunicationBus;
+import com.example.ptcare_cmu.BleScanner.ScannerCommunicationBus;
 import com.mbientlab.metawear.MetaWearBoard;
 
 import java.util.UUID;
 
-public class ScannerActivity extends AppCompatActivity implements ScannerCommunicationBus {
+public class ScannerActivity extends AppCompatActivity implements ScannerCommunicationBus, BleScanner.OnFragmentInteractionListener {
     public static final String EXTRA_DEVICE= "com.mbientlab.metawear.tutorial.multimw.ScannerActivity.EXTRA_DEVICE";
     private final static UUID[] SERVICE_UUIDS;
 
@@ -87,5 +88,10 @@ public class ScannerActivity extends AppCompatActivity implements ScannerCommuni
             finish();
         }
         return true;
+    }
+
+    @Override
+    public void onFragmentInteraction(Uri uri) {
+
     }
 }
