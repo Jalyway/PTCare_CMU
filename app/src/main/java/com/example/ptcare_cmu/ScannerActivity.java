@@ -37,10 +37,14 @@ import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuItem;
 
 import com.example.ptcare_cmu.BleScanner.ScannerCommunicationBus;
 import com.mbientlab.metawear.MetaWearBoard;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class ScannerActivity extends AppCompatActivity implements ScannerCommunicationBus, BleScanner.OnFragmentInteractionListener {
@@ -70,9 +74,9 @@ public class ScannerActivity extends AppCompatActivity implements ScannerCommuni
     }
 
     @Override
-    public void onDeviceSelected(BluetoothDevice device) {
+    public void onDeviceSelected(ArrayList<BluetoothDevice> device) {
         Intent result= new Intent();
-        result.putExtra(EXTRA_DEVICE, device);
+        result.putParcelableArrayListExtra(EXTRA_DEVICE, device);
         setResult(RESULT_OK, result);
         finish();
     }
@@ -89,6 +93,24 @@ public class ScannerActivity extends AppCompatActivity implements ScannerCommuni
         }
         return true;
     }
+
+//    @Override
+//    public boolean onCreateOptionsMenu(Menu menu) {
+//        getMenuInflater().inflate(R.menu.sampling_menu, menu);
+//        return super.onCreateOptionsMenu(menu);
+//    }
+//    @Override
+//    public boolean onOptionsItemSelected(MenuItem item) {
+//        switch (item.getItemId()) {
+//            case R.id.add_action_code:
+//                break;
+//            case R.id.start_sampling:
+//                break;
+//            case R.id.stop_sampling:
+//                break;
+//        }
+//        return super.onOptionsItemSelected(item);
+//    }
 
     @Override
     public void onFragmentInteraction(Uri uri) {

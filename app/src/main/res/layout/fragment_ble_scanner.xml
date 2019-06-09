@@ -30,11 +30,17 @@
     </LinearLayout>
 
     <ListView
+        android:id="@+id/blescan_devices"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:id="@+id/blescan_devices"
-        android:choiceMode="singleChoice" />
+        android:choiceMode="multipleChoice" />
+
+    <Button
+        android:id="@+id/bt_connect"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Connect" />
 
     <Button
         android:id="@+id/blescan_control"

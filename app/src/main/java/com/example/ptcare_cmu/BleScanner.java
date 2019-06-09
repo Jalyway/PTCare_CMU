@@ -22,20 +22,23 @@ import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.mbientlab.bletoolbox.scanner.MacAddressEntryDialogFragment;
-import com.mbientlab.bletoolbox.scanner.ScannedDeviceInfo;
-import com.mbientlab.bletoolbox.scanner.ScannedDeviceInfoAdapter;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -67,6 +70,7 @@ public class BleScanner extends Fragment {
 
     TextView txtChange;
     ProgressBar processBar;
+    Button bt_connect;
     private ScannedDeviceInfoAdapter scannedDevicesAdapter;
     private Button scanControl;
     private Handler mHandler;
@@ -74,6 +78,7 @@ public class BleScanner extends Fragment {
     private BluetoothAdapter btAdapter= null;
     private HashSet<UUID> filterServiceUuids;
     private HashSet<ParcelUuid> api21FilterServiceUuids;
+    List<String> listShow=new ArrayList<>();; // 這個用來記錄哪幾個 item 是被打勾的
     private boolean isScanReady;
     private com.example.ptcare_cmu.BleScanner.ScannerCommunicationBus commBus= null;
 
@@ -158,7 +163,7 @@ public class BleScanner extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        scannedDevicesAdapter= new ScannedDeviceInfoAdapter(getActivity(), R.id.blescan_entry_layout);
+        scannedDevicesAdapter= new ScannedDeviceInfoAdapter(getActivity(), R.id.blescan_entry_lay);
         scannedDevicesAdapter.setNotifyOnChange(true);
         mHandler = new Handler();
         View view=inflater.inflate(R.layout.fragment_ble_scanner, container,false);
@@ -184,18 +189,34 @@ public class BleScanner extends Fragment {
 
         ListView scannedDevices= (ListView) view.findViewById(R.id.blescan_devices);
         scannedDevices.setAdapter(scannedDevicesAdapter);
+        scannedDevices.setChoiceMode(AbsListView.CHOICE_MODE_MULTIPLE);
         scannedDevices.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                stopBleScan();
-
-                commBus.onDeviceSelected(scannedDevicesAdapter.getItem(i).btDevice);
+            public void onItemClick(AdapterView<?> adapterView, View view, int pos, long l) {
+                CheckBox ck_select=view.findViewById(R.id.ck_select);
+                ck_select.setChecked(!ck_select.isChecked());
+                if(ck_select.isChecked())
+                    listShow.add(String.valueOf(pos));
+                else
+                    listShow.remove(""+String.valueOf(pos));
             }
         });
 
         scanControl= (Button) view.findViewById(R.id.blescan_control);
         txtChange=view.findViewById(R.id.ble_scan_title);
         processBar=view.findViewById(R.id.processBar);
+        bt_connect=view.findViewById(R.id.bt_connect);
+        bt_connect.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ArrayList<BluetoothDevice> device_item=new ArrayList<>();
+                for(int i=0; i<listShow.size();i++){
+                    device_item.add(scannedDevicesAdapter.getItem(Integer.valueOf(listShow.get(i))).btDevice);
+                    Toast.makeText(getContext(),String.valueOf(i),Toast.LENGTH_SHORT).show();
+                }
+                commBus.onDeviceSelected(device_item);
+            }
+        });
         scanControl.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -204,6 +225,7 @@ public class BleScanner extends Fragment {
                 } else {
                     startBleScan();
                 }
+                listShow.clear();
             }
         });
 
@@ -237,6 +259,7 @@ public class BleScanner extends Fragment {
         processBar.setVisibility(View.VISIBLE);
         processBar.setProgress(-1);
         scanControl.setEnabled(false);
+        bt_connect.setEnabled(false);
         mHandler.postDelayed(new Runnable() {
             @Override
             public void run()  {
@@ -344,6 +367,7 @@ public class BleScanner extends Fragment {
             processBar.setProgress(-1);
             txtChange.setText(R.string.select_metawear);
             scanControl.setEnabled(true);
+            bt_connect.setEnabled(true);
         }
     }
 
@@ -433,6 +457,6 @@ public class BleScanner extends Fragment {
     public interface ScannerCommunicationBus {
         UUID[] getFilterServiceUuids();
         long getScanDuration();
-        void onDeviceSelected(BluetoothDevice device);
+        void onDeviceSelected(ArrayList<BluetoothDevice> device);
     }
 }
