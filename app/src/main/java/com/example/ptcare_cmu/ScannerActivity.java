@@ -94,23 +94,7 @@ public class ScannerActivity extends AppCompatActivity implements ScannerCommuni
         return true;
     }
 
-//    @Override
-//    public boolean onCreateOptionsMenu(Menu menu) {
-//        getMenuInflater().inflate(R.menu.sampling_menu, menu);
-//        return super.onCreateOptionsMenu(menu);
-//    }
-//    @Override
-//    public boolean onOptionsItemSelected(MenuItem item) {
-//        switch (item.getItemId()) {
-//            case R.id.add_action_code:
-//                break;
-//            case R.id.start_sampling:
-//                break;
-//            case R.id.stop_sampling:
-//                break;
-//        }
-//        return super.onOptionsItemSelected(item);
-//    }
+
 
     @Override
     public void onFragmentInteraction(Uri uri) {

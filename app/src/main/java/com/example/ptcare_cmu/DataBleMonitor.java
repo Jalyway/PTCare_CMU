@@ -14,6 +14,8 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.Toast;
 
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -61,37 +63,28 @@ public class DataBleMonitor extends AppCompatActivity {
                 displayLocationSettingsRequest(this);
         }
 
-        // 開啟定位功能
-        //displayLocationSettingsRequest(this);
-
-//        // 確認是否有開啟定位功能
-//        locationStatus = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-//        boolean gps_enabled = locationStatus.isProviderEnabled(LocationManager.GPS_PROVIDER);
-//        boolean network_enabled = locationStatus.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-//        if (!gps_enabled && !network_enabled) {
-//            new AlertDialog.Builder(this)
-//                    .setTitle("提示訊息")
-//                    .setMessage("需要開啟定位功能")
-//                    .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-//                        @Override
-//                        public void onClick(DialogInterface dialog, int which) {
-//                            startActivityForResult(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS),REQUEST_ENABLE_LOCATION);
-//                        }
-//                    })
-//                    .setNegativeButton("Cancel", (dialog, which) -> {
-//                        finish();
-//                    })
-//                    .setCancelable(false)
-//                    .create()
-//                    .show();
-//        }
-
-
         // fab 是新增藍芽的按鈕
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(view -> startActivityForResult(new Intent(this, ScannerActivity.class), REQUEST_START_BLE_SCAN));
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.sampling_menu, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.add_action_code:
+                break;
+            case R.id.start_sampling:
+                break;
+            case R.id.stop_sampling:
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
