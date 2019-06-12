@@ -27,7 +27,7 @@ import android.widget.Toast;
 
 import java.util.Map;
 
-public class EditMotion extends AppCompatActivity {
+public class EditMotion extends MainActivity {
 
     private static final int Update_or_Delete = 1;
     private static final int ReQuery = 2;
