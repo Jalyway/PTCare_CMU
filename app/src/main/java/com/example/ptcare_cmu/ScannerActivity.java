@@ -39,6 +39,7 @@ import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 import com.example.ptcare_cmu.BleScanner.ScannerCommunicationBus;
 import com.mbientlab.metawear.MetaWearBoard;
@@ -87,7 +88,8 @@ public class ScannerActivity extends AppCompatActivity implements ScannerCommuni
 
         if (keyCode == KeyEvent.KEYCODE_BACK) { // 攔截返回鍵
             Intent result= new Intent();
-            result.putExtra(EXTRA_DEVICE, "");
+            //result.putExtra(EXTRA_DEVICE, "");
+            result.putParcelableArrayListExtra(EXTRA_DEVICE, null);
             setResult(RESULT_OK, result);
             finish();
         }

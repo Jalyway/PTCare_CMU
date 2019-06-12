@@ -24,7 +24,7 @@ import android.widget.Toast;
 
 import java.util.Map;
 
-public class ModifyMotion extends AppCompatActivity {
+public class ModifyMotion extends MainActivity {
 
     private static final int Update_or_Delete = 1;
     private static final int ReQuery = 2;

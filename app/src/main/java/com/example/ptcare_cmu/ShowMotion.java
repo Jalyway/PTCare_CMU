@@ -23,7 +23,7 @@ import android.widget.Toast;
 import java.util.List;
 import java.util.Map;
 
-public class ShowMotion extends AppCompatActivity implements DbConstants {
+public class ShowMotion extends MainActivity implements DbConstants {
 
     private static final int Update_or_Delete = 1;
     private static final int ReQuery = 2;

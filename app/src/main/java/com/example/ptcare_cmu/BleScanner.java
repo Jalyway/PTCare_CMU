@@ -78,7 +78,9 @@ public class BleScanner extends Fragment {
     private BluetoothAdapter btAdapter= null;
     private HashSet<UUID> filterServiceUuids;
     private HashSet<ParcelUuid> api21FilterServiceUuids;
-    List<String> listShow=new ArrayList<>();; // 這個用來記錄哪幾個 item 是被打勾的
+
+    List<String> listShow=new ArrayList<>(); // 這個用來記錄哪幾個 item 是被打勾的
+
     private boolean isScanReady;
     private com.example.ptcare_cmu.BleScanner.ScannerCommunicationBus commBus= null;
 
@@ -199,6 +201,12 @@ public class BleScanner extends Fragment {
                     listShow.add(String.valueOf(pos));
                 else
                     listShow.remove(""+String.valueOf(pos));
+
+                //
+                if (listShow.size() != 0)
+                    bt_connect.setEnabled(true);
+                else
+                    bt_connect.setEnabled(false);
             }
         });
 
@@ -367,7 +375,7 @@ public class BleScanner extends Fragment {
             processBar.setProgress(-1);
             txtChange.setText(R.string.select_metawear);
             scanControl.setEnabled(true);
-            bt_connect.setEnabled(true);
+            //bt_connect.setEnabled(true);
         }
     }
 

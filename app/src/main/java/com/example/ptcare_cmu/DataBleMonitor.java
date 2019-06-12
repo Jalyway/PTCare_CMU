@@ -93,7 +93,7 @@ public class DataBleMonitor extends AppCompatActivity {
                 if (resultCode == Activity.RESULT_OK) {
                     // 獲取搜尋到的藍芽設備
                     ArrayList<BluetoothDevice> selectedDevice = data.getParcelableArrayListExtra(ScannerActivity.EXTRA_DEVICE);
-                    if (selectedDevice.size() != 0) {
+                    if (selectedDevice!=null && selectedDevice.size()!=0) {
                         count++;
                         Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.main_activity_content);
                         for (int i=0; i<selectedDevice.size(); i++){

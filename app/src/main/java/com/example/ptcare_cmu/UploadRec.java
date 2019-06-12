@@ -14,7 +14,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class UploadRec extends AppCompatActivity implements View.OnClickListener, AsyncResponse {
+public class UploadRec extends MainActivity implements View.OnClickListener, AsyncResponse {
     private static final int PICK_FILE_REQUEST = 1;
     private static final String TAG = MainActivity.class.getSimpleName();
     //

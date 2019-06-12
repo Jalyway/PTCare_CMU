@@ -18,7 +18,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class ShowCriteria extends AppCompatActivity {
+public class ShowCriteria extends MainActivity {
 
     private static final int Update_or_Delete = 1;
     private static final int ReQuery = 2;
