@@ -33,15 +33,21 @@ package com.example.ptcare_cmu;
 
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
+import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuItem;
 
-import com.mbientlab.bletoolbox.scanner.BleScannerFragment.ScannerCommunicationBus;
+import com.example.ptcare_cmu.BleScanner.ScannerCommunicationBus;
 import com.mbientlab.metawear.MetaWearBoard;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
-public class ScannerActivity extends AppCompatActivity implements ScannerCommunicationBus {
+public class ScannerActivity extends AppCompatActivity implements ScannerCommunicationBus, BleScanner.OnFragmentInteractionListener {
     public static final String EXTRA_DEVICE= "com.mbientlab.metawear.tutorial.multimw.ScannerActivity.EXTRA_DEVICE";
     private final static UUID[] SERVICE_UUIDS;
 
@@ -68,10 +74,30 @@ public class ScannerActivity extends AppCompatActivity implements ScannerCommuni
     }
 
     @Override
-    public void onDeviceSelected(BluetoothDevice device) {
+    public void onDeviceSelected(ArrayList<BluetoothDevice> device) {
         Intent result= new Intent();
-        result.putExtra(EXTRA_DEVICE, device);
+        result.putParcelableArrayListExtra(EXTRA_DEVICE, device);
         setResult(RESULT_OK, result);
         finish();
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        // TODO Auto-generated method stub
+
+        if (keyCode == KeyEvent.KEYCODE_BACK) { // 攔截返回鍵
+            Intent result= new Intent();
+            result.putExtra(EXTRA_DEVICE, "");
+            setResult(RESULT_OK, result);
+            finish();
+        }
+        return true;
+    }
+
+
+
+    @Override
+    public void onFragmentInteraction(Uri uri) {
+
     }
 }
