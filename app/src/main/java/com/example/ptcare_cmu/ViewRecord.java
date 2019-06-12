@@ -33,7 +33,7 @@ import java.util.Map;
 import au.com.bytecode.opencsv.CSVWriter;
 
 
-public class ViewRecord extends AppCompatActivity {
+public class ViewRecord extends MainActivity {
 
     private DatabaseHelper dbHelper;
     private SQLiteDatabase database;

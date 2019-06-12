@@ -4,6 +4,7 @@ package com.example.ptcare_cmu;
  * Revised by xi-jun on 2019/5/6 at YZU.
  */
 
+import android.app.ActivityManager;
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -49,8 +50,7 @@ public class MainActivity extends AppCompatActivity {
                     startActivity(new Intent(getApplicationContext(), EditCriteria.class));  //準則
                     break;
                 case R.id.imageButton4: //從網站接收JY-61產生的原始檔
-//                    intent.setClass(getApplicationContext(), UploadRec.class); //上傳資料
-                    startActivity(new Intent(getApplicationContext(), UploadRec.class));
+                    startActivity(new Intent(getApplicationContext(), UploadRec.class)); //上傳資料
                     break;
                 case R.id.imageButton5: //產生特徵檔
                     startActivity(new Intent(getApplicationContext(), ViewRecord.class));
@@ -68,14 +68,21 @@ public class MainActivity extends AppCompatActivity {
     // Option Menu 回首頁
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.option_menu, menu);
+        ActivityManager manager = (ActivityManager) this.getSystemService(ACTIVITY_SERVICE);
+        String className = manager.getRunningTasks(1).get(0).topActivity.getClassName();
+        if (! className.contains("MainActivity")) {
+            getMenuInflater().inflate(R.menu.option_menu, menu);
+            //Toast.makeText(this,"Not in MainActivity",Toast.LENGTH_SHORT).show();
+        }
         return super.onCreateOptionsMenu(menu);
     }
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.optionMenu:
-                startActivity(new Intent(this, MainActivity.class));
+                Intent intent = new Intent(this, MainActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                startActivity(intent);
                 finish();
                 break;
         }
