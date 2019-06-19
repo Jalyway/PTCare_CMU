@@ -24,6 +24,9 @@ import android.widget.RadioGroup;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Map;
 
 public class EditCriteria extends MainActivity {
@@ -69,8 +72,8 @@ public class EditCriteria extends MainActivity {
         sprMotion[1][0] = "";
         int i = 1;
         for (Map.Entry<String, String> entry : motionList.entrySet()) {
-            sprMotion[0][i] = entry.getValue();
-            sprMotion[1][i] = entry.getKey();
+            sprMotion[0][i] = entry.getValue();  //取得各動作的名稱
+            sprMotion[1][i] = entry.getKey();    //取得各動作的代碼
             i++;
         }
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.support_simple_spinner_dropdown_item, sprMotion[0]);
@@ -151,18 +154,21 @@ public class EditCriteria extends MainActivity {
             //Toast.makeText(this, "動作代碼:"+val, Toast.LENGTH_LONG).show(); //
 
             if (! val.equals("")) {
+                String motionName = "";
                 String resultCode = "";
                 int totalSec = 0;
-                String resultSec = "0, ";
+                String resultSec = "0, ", resultSec2 = "0,";
                 int motionNum = 0, secNum = 0;
                 for (int i=0; i<selectedID.length; i++) {
                     if (! sprMotion[1][selectedID[i]].equals("")) {
                         motionNum++;  //計算共選擇幾個動作
                         if (! etSec[i].getText().toString().equals("")) {
+                            motionName += sprMotion[0][selectedID[i]] + "|";   //所有動作的名稱
                             resultCode += sprMotion[1][selectedID[i]] + ", ";  //所有動作代碼
                             totalSec += Integer.parseInt(etSec[i].getText().toString());  //總秒數(持續累加)
                             resultSec += String.valueOf(totalSec) + ", ";  //各動作秒數以字串來記錄
-                            secNum++;  //計算共有填入幾個秒數
+                            resultSec2 += totalSec + ",";                  //(為了用來存檔使用)
+                            secNum++;  //計算共有填入幾個秒數欄位
                             //Toast.makeText(this,String.valueOf(resultSec),Toast.LENGTH_LONG).show(); //
                         }
                         else
@@ -172,7 +178,7 @@ public class EditCriteria extends MainActivity {
 
                 //Toast.makeText(this,"motionNum:" + String.valueOf(motionNum),Toast.LENGTH_SHORT).show();
                 //Toast.makeText(this,"secNum:" + String.valueOf(secNum),Toast.LENGTH_SHORT).show();
-                // 確定選擇的動作及填入的秒數兩者數目一樣，再新增準則
+                // 確定選擇的動作及填入的秒數兩者數目一致，再新增準則
                 if (motionNum == secNum) {
                     //新增一筆準則資料
                     ContentValues cv = new ContentValues();
@@ -183,6 +189,20 @@ public class EditCriteria extends MainActivity {
                     long id = database.insert("criteria", null, cv);
                     if (id > 0) {
                         Toast.makeText(this,"新增紀錄"+id+" 準則名稱:"+cName.getText().toString(),Toast.LENGTH_LONG).show();
+
+                        // 將新增的準則存成.txt檔
+                        String fileName = cName.getText().toString() + ".txt";
+                        String data = cCycles.getText().toString() + "\n" + motionName.substring(0,motionName.length()-1) + "\n" + resultSec2.substring(0,resultSec2.length()-1);
+                        try {
+                            FileWriter fw = new FileWriter("/data/data/com.example.ptcare_cmu/" + fileName, false);
+                            BufferedWriter bw = new BufferedWriter(fw);
+                            bw.write(data);
+                            bw.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
+                        // 新增完成後還原成原始狀態
                         cName.setText("");
                         cCycles.setText("");
                         for (Spinner spinner : spinner)
