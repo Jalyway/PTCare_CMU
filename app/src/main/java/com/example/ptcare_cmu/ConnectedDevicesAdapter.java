@@ -58,7 +58,9 @@ public class ConnectedDevicesAdapter extends ArrayAdapter<DeviceState> {
             viewHolder= new ViewHolder();
             viewHolder.deviceName= (TextView) convertView.findViewById(R.id.status_device_name);
             viewHolder.deviceAddress= (TextView) convertView.findViewById(R.id.status_mac_address);
-            viewHolder.deviceOrientation= (TextView) convertView.findViewById(R.id.status_orientation);
+            viewHolder.deviceAngle= (TextView) convertView.findViewById(R.id.status_angle);
+            viewHolder.deviceAcceleration= (TextView) convertView.findViewById(R.id.status_acceleration);
+            viewHolder.deviceGYRO= (TextView) convertView.findViewById(R.id.status_GYRO);
             viewHolder.switchState= (RadioGroup) convertView.findViewById(R.id.status_button);
             viewHolder.connectingText= (TextView) convertView.findViewById(R.id.text_connecting);
             viewHolder.connectingProgress= (ProgressBar) convertView.findViewById(R.id.connecting_progress);
@@ -81,14 +83,24 @@ public class ConnectedDevicesAdapter extends ArrayAdapter<DeviceState> {
         if (state.connecting) {
             viewHolder.connectingProgress.setVisibility(View.VISIBLE);
             viewHolder.connectingText.setVisibility(View.VISIBLE);
-            viewHolder.deviceOrientation.setVisibility(View.GONE);
+            viewHolder.deviceAngle.setVisibility(View.GONE);
+            viewHolder.deviceAcceleration.setVisibility(View.GONE);
+            viewHolder.deviceGYRO.setVisibility(View.GONE);
             viewHolder.switchState.setVisibility(View.GONE);
         } else {
-            viewHolder.deviceOrientation.setVisibility(View.VISIBLE);
+            viewHolder.deviceAngle.setVisibility(View.VISIBLE);
+            viewHolder.deviceAcceleration.setVisibility(View.VISIBLE);
+            viewHolder.deviceGYRO.setVisibility(View.VISIBLE);
             viewHolder.switchState.setVisibility(View.VISIBLE);
 
-            if (state.deviceOrientation != null) {
-                viewHolder.deviceOrientation.setText(state.deviceOrientation);
+            if (state.deviceAngle != null) {
+                viewHolder.deviceAngle.setText(state.deviceAngle);
+            }
+            if (state.deviceAcceleration != null) {
+                viewHolder.deviceAcceleration.setText(state.deviceAcceleration);
+            }
+            if (state.deviceGYRO != null) {
+                viewHolder.deviceGYRO.setText(state.deviceGYRO);
             }
 
             if (state.pressed) {
@@ -109,7 +121,7 @@ public class ConnectedDevicesAdapter extends ArrayAdapter<DeviceState> {
     }
 
     private class ViewHolder {
-        TextView deviceName, deviceAddress, deviceOrientation, connectingText;
+        TextView deviceName, deviceAddress, deviceAngle, connectingText, deviceAcceleration, deviceGYRO;
         RadioGroup switchState;
         ProgressBar connectingProgress;
     }
@@ -121,7 +133,9 @@ public class ConnectedDevicesAdapter extends ArrayAdapter<DeviceState> {
         } else {
             DeviceState current= getItem(pos);
             current.pressed= newState.pressed;
-            current.deviceOrientation= newState.deviceOrientation;
+            current.deviceAngle= newState.deviceAngle;
+            current.deviceAcceleration= newState.deviceAcceleration;
+            current.deviceGYRO= newState.deviceGYRO;
             notifyDataSetChanged();
         }
     }

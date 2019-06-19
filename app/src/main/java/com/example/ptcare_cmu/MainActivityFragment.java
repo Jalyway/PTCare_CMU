@@ -50,17 +50,23 @@ import android.view.ViewGroup;
 import android.widget.ListView;
 
 import com.mbientlab.metawear.AsyncDataProducer;
+import com.mbientlab.metawear.Data;
 import com.mbientlab.metawear.MetaWearBoard;
 import com.mbientlab.metawear.Route;
 import com.mbientlab.metawear.Subscriber;
 import com.mbientlab.metawear.android.BtleService;
 import com.mbientlab.metawear.data.Acceleration;
+import com.mbientlab.metawear.data.AngularVelocity;
 import com.mbientlab.metawear.module.Accelerometer;
 import com.mbientlab.metawear.module.AccelerometerBosch;
 import com.mbientlab.metawear.module.AccelerometerMma8452q;
 import com.mbientlab.metawear.module.Debug;
+import com.mbientlab.metawear.module.GyroBmi160;
 import com.mbientlab.metawear.module.Switch;
 
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.util.HashMap;
 
 import bolts.Capture;
@@ -131,15 +137,23 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
 
             orientCapture.set(orientation);
 
-            return orientation.addRouteAsync(source -> source.stream((data, env) -> {
-                getActivity().runOnUiThread(() -> {
-                    Log.w("WWW", "xxx");
-                    //newDeviceState.deviceOrientation = data.value(SensorOrientation.class).toString();
-                    newDeviceState.deviceOrientation = data.value(Acceleration.class).toString();
-                    Log.w("WWW", newDeviceState.deviceOrientation);
-                    connectedDevices.notifyDataSetChanged();
+            return orientation.addRouteAsync(source -> {
+                source.stream((data, env) -> {
+                    getActivity().runOnUiThread(() -> {
+                        Log.w("WWW", "xxx");
+                        //newDeviceState.deviceOrientation = data.value(SensorOrientation.class).toString();
+
+                        newDeviceState.deviceAcceleration = data.value(Acceleration.class).toString();
+
+                        //newDeviceState.deviceAngle = CalculateAngles(data.value(Acceleration.class));
+
+                        //newDeviceState.deviceGYRO = data.value(AngularVelocity.class).toString();   //陀螺儀是抓角速度
+
+                        Log.w("WWW", newDeviceState.deviceAcceleration);
+                        connectedDevices.notifyDataSetChanged();
+                    });
                 });
-            }));
+            });
         }).onSuccessTask(task -> newBoard.getModule(Switch.class).state().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
             getActivity().runOnUiThread(() -> {
                 newDeviceState.pressed = data.value(Boolean.class);
@@ -208,4 +222,24 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     public void onServiceDisconnected(ComponentName name) {
 
     }
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////-----------------------CalculateAngles
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    private String CalculateAngles(Acceleration AccelerationData)
+    {
+        double Denominator = Math.sqrt(Math.pow(AccelerationData.x(), 2) + Math.pow(AccelerationData.y(), 2) + Math.pow(AccelerationData.z(), 2));
+
+        double AngleX = CalculateAngle(AccelerationData.x(), Denominator);
+        double AngleY = CalculateAngle(AccelerationData.y(), Denominator);
+        double AngleZ = CalculateAngle(AccelerationData.z(), Denominator);
+        String ans="(x:"+AngleX+",y:"+AngleY+",z:"+AngleZ+")";
+        return(ans);
+    } // CalculateAngles
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////-----------------------CalculateAngle
+    private double CalculateAngle(float Value, double Denominator)      //使用弧度計算角度
+    {
+        double Radian = Math.acos(Value / Denominator);
+        return ((Radian * (double)180) / Math.PI);
+    } // end CalculateAngleByRadian
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 }
