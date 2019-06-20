@@ -64,6 +64,8 @@ public class ConnectedDevicesAdapter extends ArrayAdapter<DeviceState> {
             viewHolder.dataGYRO=convertView.findViewById(R.id.data_GYRO);
             viewHolder.deviceAngular=convertView.findViewById(R.id.status_Angular);
             viewHolder.dataAngular=convertView.findViewById(R.id.data_Angular);
+            viewHolder.deviceTime=convertView.findViewById(R.id.status_time);
+            viewHolder.dataTime=convertView.findViewById(R.id.data_time);
             viewHolder.switchState= (RadioGroup) convertView.findViewById(R.id.status_button);
             viewHolder.connectingText= (TextView) convertView.findViewById(R.id.text_connecting);
             viewHolder.connectingProgress= (ProgressBar) convertView.findViewById(R.id.connecting_progress);
@@ -92,6 +94,8 @@ public class ConnectedDevicesAdapter extends ArrayAdapter<DeviceState> {
             viewHolder.dataAcceleration.setVisibility(View.GONE);
             viewHolder.dataGYRO.setVisibility(View.GONE);
             viewHolder.dataAngular.setVisibility(View.GONE);
+            viewHolder.deviceTime.setVisibility(View.GONE);
+            viewHolder.dataTime.setVisibility(View.GONE);
             viewHolder.switchState.setVisibility(View.GONE);
         } else {
             viewHolder.deviceAcceleration.setVisibility(View.VISIBLE);
@@ -101,6 +105,8 @@ public class ConnectedDevicesAdapter extends ArrayAdapter<DeviceState> {
             viewHolder.dataGYRO.setVisibility(View.VISIBLE);
             viewHolder.dataAngular.setVisibility(View.VISIBLE);
             viewHolder.switchState.setVisibility(View.VISIBLE);
+            viewHolder.deviceTime.setVisibility(View.VISIBLE);
+            viewHolder.dataTime.setVisibility(View.VISIBLE);
 
             if (state.deviceAngle != null) {
                 viewHolder.dataAngular.setText(state.deviceAngle);
@@ -110,6 +116,9 @@ public class ConnectedDevicesAdapter extends ArrayAdapter<DeviceState> {
             }
             if (state.deviceGYRO != null) {
                 viewHolder.dataGYRO.setText(state.deviceGYRO);
+            }
+            if (state.deviceTime != null) {
+                viewHolder.dataTime.setText(state.deviceTime);
             }
 
             if (state.pressed) {
@@ -130,7 +139,9 @@ public class ConnectedDevicesAdapter extends ArrayAdapter<DeviceState> {
     }
 
     private class ViewHolder {
-        TextView deviceName, deviceAddress, deviceAcceleration,dataAcceleration,deviceGYRO,dataGYRO,deviceAngular,dataAngular, connectingText;
+        TextView deviceName, deviceAddress,
+                deviceAcceleration,dataAcceleration,deviceGYRO,dataGYRO,deviceAngular,dataAngular,
+                connectingText, deviceTime, dataTime;
         RadioGroup switchState;
         ProgressBar connectingProgress;
     }

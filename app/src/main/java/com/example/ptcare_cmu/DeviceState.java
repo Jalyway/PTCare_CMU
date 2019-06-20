@@ -41,6 +41,7 @@ class DeviceState {
     String deviceAngle;
     String deviceAcceleration;
     String deviceGYRO;
+    String deviceTime;
     boolean pressed, connecting;
 
     DeviceState(BluetoothDevice btDevice) {
@@ -48,6 +49,7 @@ class DeviceState {
         this.deviceAngle= null;
         this.deviceAcceleration= null;
         this.deviceGYRO= null;
+        this.deviceTime= null;
         pressed= false;
     }
 

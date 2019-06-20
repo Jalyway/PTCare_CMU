@@ -36,26 +36,33 @@ import android.app.Activity;
 import android.bluetooth.BluetoothDevice;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
+import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import com.mbientlab.metawear.AsyncDataProducer;
+import com.mbientlab.metawear.DeviceInformation;
 import com.mbientlab.metawear.MetaWearBoard;
 import com.mbientlab.metawear.Route;
 import com.mbientlab.metawear.Subscriber;
 import com.mbientlab.metawear.android.BtleService;
 import com.mbientlab.metawear.data.Acceleration;
 import com.mbientlab.metawear.data.AngularVelocity;
+import com.mbientlab.metawear.data.MagneticField;
 import com.mbientlab.metawear.module.Accelerometer;
 import com.mbientlab.metawear.module.AccelerometerBosch;
 import com.mbientlab.metawear.module.AccelerometerMma8452q;
@@ -63,10 +70,15 @@ import com.mbientlab.metawear.module.Debug;
 import com.mbientlab.metawear.module.GyroBmi160;
 import com.mbientlab.metawear.module.Switch;
 
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.util.HashMap;
+import java.util.TimerTask;
 
 import bolts.Capture;
 import bolts.Continuation;
+import bolts.Task;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -75,6 +87,10 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     private final HashMap<DeviceState, MetaWearBoard> stateToBoards;
     private BtleService.LocalBinder binder;
     private GyroBmi160 gyroBmi160;
+    private Accelerometer accelerometer;
+    DeviceState newDeviceState;
+    public int tsec=0;
+    public Handler mHandler;
 
     private ConnectedDevicesAdapter connectedDevices= null;
 
@@ -85,7 +101,7 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        mHandler = new Handler(new handlerUpdate());
         Activity owner= getActivity();
         owner.getApplicationContext().bindService(new Intent(owner, BtleService.class), this, Context.BIND_AUTO_CREATE);
     }
@@ -100,7 +116,7 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
 
 
     public void addNewDevice(BluetoothDevice btDevice) {
-        final DeviceState newDeviceState= new DeviceState(btDevice);
+        newDeviceState= new DeviceState(btDevice);
         final MetaWearBoard newBoard= binder.getMetaWearBoard(btDevice);
 
         newDeviceState.connecting= true;
@@ -118,8 +134,8 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
             });
             //--------------------------------
             gyroBmi160 = newBoard.getModule(GyroBmi160.class);
-            gyroBmi160.angularVelocity().start();
-            gyroBmi160.start();
+            gyroBmi160.angularVelocity().stop();
+            gyroBmi160.stop();
             gyroBmi160.configure()
                     .odr(GyroBmi160.OutputDataRate.ODR_25_HZ)
                     .range(GyroBmi160.Range.FSR_2000)
@@ -158,7 +174,7 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
                 newDeviceState.connecting = false;
                 connectedDevices.notifyDataSetChanged();
             });
-            final Accelerometer accelerometer = newBoard.getModule(Accelerometer.class);
+            accelerometer = newBoard.getModule(Accelerometer.class);
             accelCapture.set(accelerometer);
 
             final AsyncDataProducer orientation;
@@ -193,8 +209,8 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
                     });
                 }
             } else {
-                orientCapture.get().start();
-                accelCapture.get().start();
+                orientCapture.get().stop();
+                accelCapture.get().stop();
             }
             return null;
         });
@@ -262,4 +278,53 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
         return ((Radian * (double)180) / Math.PI);
     } // end CalculateAngleByRadian
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    public void handleStartSampling() {
+
+        accelerometer.acceleration().start();
+        accelerometer.start();
+
+        gyroBmi160.angularVelocity().start();
+        gyroBmi160.start();
+
+        tsec=0;
+        mHandler.postDelayed(runnable,1000); // 開始Timer
+
+//        magnetometer.magneticField().start();
+//        magnetometer.start();
+
+//        isSampling = true;
+    }
+
+    public void handleStopSampling() {
+
+        accelerometer.acceleration().stop();
+        accelerometer.stop();
+
+        gyroBmi160.angularVelocity().stop();
+        gyroBmi160.stop();
+
+        mHandler.removeCallbacks(runnable); //停止Timer
+//        magnetometer.magneticField().stop();
+//        magnetometer.stop();
+//        isSampling = false;
+
+    }
+    public Runnable runnable = new Runnable() {
+        public void run ( ) {
+            //	update( );
+            tsec++;
+            mHandler.postDelayed(this,1000);
+
+            newDeviceState.deviceTime=Integer.toString(tsec);
+
+        }
+    };
+    //-------------------------------------------------------------------------------------------------------
+    class handlerUpdate implements Handler.Callback {
+
+        @Override
+        public boolean handleMessage(Message msg) {
+            return false;
+        }
+    }
 }

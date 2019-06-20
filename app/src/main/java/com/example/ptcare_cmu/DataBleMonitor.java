@@ -75,12 +75,15 @@ public class DataBleMonitor extends AppCompatActivity {
     }
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.main_activity_content);
         switch (item.getItemId()) {
             case R.id.add_action_code:
                 break;
             case R.id.start_sampling:
+                ((MainActivityFragment) fragment).handleStartSampling();
                 break;
             case R.id.stop_sampling:
+                ((MainActivityFragment) fragment).handleStopSampling();
                 break;
         }
         return super.onOptionsItemSelected(item);
