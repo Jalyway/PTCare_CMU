@@ -78,7 +78,9 @@ public class BleScanner extends Fragment {
     private BluetoothAdapter btAdapter= null;
     private HashSet<UUID> filterServiceUuids;
     private HashSet<ParcelUuid> api21FilterServiceUuids;
+
     List<String> listShow=new ArrayList<>(); // 這個用來記錄哪幾個 item 是被打勾的
+
     private boolean isScanReady;
     private com.example.ptcare_cmu.BleScanner.ScannerCommunicationBus commBus= null;
 

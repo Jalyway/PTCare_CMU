@@ -5,6 +5,7 @@ package com.example.ptcare_cmu;
  * Revised by xi-jun on 2019/5/14 at YZU.
  */
 
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
@@ -18,11 +19,14 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.File;
+
 public class ShowCriteria extends MainActivity {
 
     private static final int Update_or_Delete = 1;
     private static final int ReQuery = 2;
 
+    private TextView title;
     private DatabaseHelper dbHelper;
     private SQLiteDatabase database;
     private String criteriaID;
@@ -32,7 +36,7 @@ public class ShowCriteria extends MainActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.show_criteria);
         //
-        TextView title = findViewById(R.id.textView);
+        title = findViewById(R.id.textView);
         TextView cycle = findViewById(R.id.cycle_times);
         TextView mCode = findViewById(R.id.motion_code);
         TextView mName = findViewById(R.id.motion_name);
@@ -106,6 +110,13 @@ public class ShowCriteria extends MainActivity {
                              database = dbHelper.getWritableDatabase();
                              database.delete("criteria","_id="+ criteriaID,null);
                              Toast.makeText(getApplicationContext(),"資料已刪除",Toast.LENGTH_SHORT).show();
+
+                             // 刪除內部空間的準則檔案 .txt
+                             String fileName = title.getText().toString() + ".txt";
+                             File file = new File("/data/data/com.example.ptcare_cmu/" + fileName);
+                             boolean deleted = file.delete();
+                             Toast.makeText(getApplicationContext(),"是否成功刪除檔案:" + deleted,Toast.LENGTH_SHORT).show();
+
 
                              setResult(Update_or_Delete, new Intent());
                              finish();

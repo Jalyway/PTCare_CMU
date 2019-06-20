@@ -56,6 +56,7 @@ import android.widget.TextView;
 
 import com.mbientlab.metawear.AsyncDataProducer;
 import com.mbientlab.metawear.DeviceInformation;
+import com.mbientlab.metawear.Data;
 import com.mbientlab.metawear.MetaWearBoard;
 import com.mbientlab.metawear.Route;
 import com.mbientlab.metawear.Subscriber;
@@ -63,6 +64,7 @@ import com.mbientlab.metawear.android.BtleService;
 import com.mbientlab.metawear.data.Acceleration;
 import com.mbientlab.metawear.data.AngularVelocity;
 import com.mbientlab.metawear.data.MagneticField;
+import com.mbientlab.metawear.data.AngularVelocity;
 import com.mbientlab.metawear.module.Accelerometer;
 import com.mbientlab.metawear.module.AccelerometerBosch;
 import com.mbientlab.metawear.module.AccelerometerMma8452q;
@@ -232,15 +234,15 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
             DeviceState current= connectedDevices.getItem(position);
             final MetaWearBoard selectedBoard= stateToBoards.get(current);
 
-//            Accelerometer accelerometer = selectedBoard.getModule(Accelerometer.class);
-//            accelerometer.stop();
-//            if (accelerometer instanceof AccelerometerBosch) {
-//                //((AccelerometerBosch) accelerometer).orientation().stop();
-//                ((AccelerometerBosch) accelerometer).acceleration().stop();
-//            } else {
-//                //((AccelerometerMma8452q) accelerometer).orientation().stop();
-//                ((AccelerometerMma8452q) accelerometer).acceleration().stop();
-//            }
+            Accelerometer accelerometer = selectedBoard.getModule(Accelerometer.class);
+            accelerometer.stop();
+            if (accelerometer instanceof AccelerometerBosch) {
+                //((AccelerometerBosch) accelerometer).orientation().stop();
+                ((AccelerometerBosch) accelerometer).acceleration().stop();
+            } else {
+                //((AccelerometerMma8452q) accelerometer).orientation().stop();
+                ((AccelerometerMma8452q) accelerometer).acceleration().stop();
+            }
 
             selectedBoard.tearDown();
             selectedBoard.getModule(Debug.class).disconnectAsync();
