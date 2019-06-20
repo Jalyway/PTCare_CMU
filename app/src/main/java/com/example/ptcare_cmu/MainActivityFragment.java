@@ -55,10 +55,12 @@ import com.mbientlab.metawear.Route;
 import com.mbientlab.metawear.Subscriber;
 import com.mbientlab.metawear.android.BtleService;
 import com.mbientlab.metawear.data.Acceleration;
+import com.mbientlab.metawear.data.AngularVelocity;
 import com.mbientlab.metawear.module.Accelerometer;
 import com.mbientlab.metawear.module.AccelerometerBosch;
 import com.mbientlab.metawear.module.AccelerometerMma8452q;
 import com.mbientlab.metawear.module.Debug;
+import com.mbientlab.metawear.module.GyroBmi160;
 import com.mbientlab.metawear.module.Switch;
 
 import java.util.HashMap;
@@ -72,6 +74,7 @@ import bolts.Continuation;
 public class MainActivityFragment extends Fragment implements ServiceConnection {
     private final HashMap<DeviceState, MetaWearBoard> stateToBoards;
     private BtleService.LocalBinder binder;
+    private GyroBmi160 gyroBmi160;
 
     private ConnectedDevicesAdapter connectedDevices= null;
 
@@ -113,30 +116,62 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
                 newDeviceState.connecting= false;
                 connectedDevices.notifyDataSetChanged();
             });
+            //--------------------------------
+            gyroBmi160 = newBoard.getModule(GyroBmi160.class);
+            gyroBmi160.angularVelocity().start();
+            gyroBmi160.start();
+            gyroBmi160.configure()
+                    .odr(GyroBmi160.OutputDataRate.ODR_25_HZ)
+                    .range(GyroBmi160.Range.FSR_2000)
+                    .commit();
+            return gyroBmi160.angularVelocity().addRouteAsync(source -> source.stream((data, env) -> {
+                getActivity().runOnUiThread(() -> {
+                    newDeviceState.deviceGYRO = data.value(AngularVelocity.class).toString();
+                    connectedDevices.notifyDataSetChanged();
+                });
+            }));
+        }).onSuccessTask(task -> newBoard.getModule(Switch.class).state().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
+            getActivity().runOnUiThread(() -> {
+                newDeviceState.pressed = data.value(Boolean.class);
+                connectedDevices.notifyDataSetChanged();
+            });
+        }))).continueWith((Continuation<Route, Void>) task -> {
+            if (task.isFaulted()) {
+                if (!newBoard.isConnected()) {
+                    getActivity().runOnUiThread(() -> connectedDevices.remove(newDeviceState));
+                } else {
+                    Snackbar.make(getActivity().findViewById(R.id.activity_main_layout), task.getError().getLocalizedMessage(), Snackbar.LENGTH_SHORT).show();
+                    newBoard.tearDown();
+                    newBoard.disconnectAsync().continueWith((Continuation<Void, Void>) task1 -> {
+                        connectedDevices.remove(newDeviceState);
+                        return null;
+                    });
+                }
+            } else {
 
+            }
+            return null;
+        });
+        //--------------------------------------------------------------------------------------------
+        newBoard.connectAsync().onSuccessTask(task -> {
+            MainActivityFragment.this.getActivity().runOnUiThread(() -> {
+                newDeviceState.connecting = false;
+                connectedDevices.notifyDataSetChanged();
+            });
             final Accelerometer accelerometer = newBoard.getModule(Accelerometer.class);
             accelCapture.set(accelerometer);
 
             final AsyncDataProducer orientation;
-            /*
-            if (accelerometer instanceof AccelerometerBosch) {
-                //orientation = ((AccelerometerBosch) accelerometer).orientation();
-                orientation = ((AccelerometerBosch) accelerometer).acceleration();
-            } else {
-                //orientation = ((AccelerometerMma8452q) accelerometer).orientation();
-                orientation = ((AccelerometerMma8452q) accelerometer).acceleration();
-            }
-            */
             orientation = accelerometer.acceleration();
-
             orientCapture.set(orientation);
 
+
             return orientation.addRouteAsync(source -> source.stream((data, env) -> {
-                getActivity().runOnUiThread(() -> {
+                MainActivityFragment.this.getActivity().runOnUiThread(() -> {
                     Log.w("WWW", "xxx");
-                    //newDeviceState.deviceOrientation = data.value(SensorOrientation.class).toString();
-                    newDeviceState.deviceOrientation = data.value(Acceleration.class).toString();
-                    Log.w("WWW", newDeviceState.deviceOrientation);
+                    newDeviceState.deviceAcceleration = data.value(Acceleration.class).toString();
+                    newDeviceState.deviceAngle = MainActivityFragment.this.CalculateAngles(data.value(Acceleration.class));
+                    Log.w("WWW", newDeviceState.deviceAcceleration);
                     connectedDevices.notifyDataSetChanged();
                 });
             }));
@@ -181,15 +216,15 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
             DeviceState current= connectedDevices.getItem(position);
             final MetaWearBoard selectedBoard= stateToBoards.get(current);
 
-            Accelerometer accelerometer = selectedBoard.getModule(Accelerometer.class);
-            accelerometer.stop();
-            if (accelerometer instanceof AccelerometerBosch) {
-                //((AccelerometerBosch) accelerometer).orientation().stop();
-                ((AccelerometerBosch) accelerometer).acceleration().stop();
-            } else {
-                //((AccelerometerMma8452q) accelerometer).orientation().stop();
-                ((AccelerometerMma8452q) accelerometer).acceleration().stop();
-            }
+//            Accelerometer accelerometer = selectedBoard.getModule(Accelerometer.class);
+//            accelerometer.stop();
+//            if (accelerometer instanceof AccelerometerBosch) {
+//                //((AccelerometerBosch) accelerometer).orientation().stop();
+//                ((AccelerometerBosch) accelerometer).acceleration().stop();
+//            } else {
+//                //((AccelerometerMma8452q) accelerometer).orientation().stop();
+//                ((AccelerometerMma8452q) accelerometer).acceleration().stop();
+//            }
 
             selectedBoard.tearDown();
             selectedBoard.getModule(Debug.class).disconnectAsync();
@@ -208,4 +243,23 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     public void onServiceDisconnected(ComponentName name) {
 
     }
+    private String CalculateAngles(Acceleration AccelerationData)
+    {
+        double Denominator = Math.sqrt(Math.pow(AccelerationData.x(), 2) + Math.pow(AccelerationData.y(), 2) + Math.pow(AccelerationData.z(), 2));
+
+        double AngleX = CalculateAngle(AccelerationData.x(), Denominator);
+        double AngleY = CalculateAngle(AccelerationData.y(), Denominator);
+        double AngleZ = CalculateAngle(AccelerationData.z(), Denominator);
+        String ans="(x:\t"+ String.format("%.3f", AngleX) + "g, " +
+                "y:\t" + String.format("%.3f", AngleY) + "g, " +
+                "z:\t" + String.format("%.3f", AngleZ) + "g)";
+        return(ans);
+    } // CalculateAngles
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////-----------------------CalculateAngle
+    private double CalculateAngle(float Value, double Denominator)      //使用弧度計算角度
+    {
+        double Radian = Math.acos(Value / Denominator);
+        return ((Radian * (double)180) / Math.PI);
+    } // end CalculateAngleByRadian
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 }

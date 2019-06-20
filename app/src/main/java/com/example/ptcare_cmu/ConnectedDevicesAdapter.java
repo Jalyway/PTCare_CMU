@@ -58,7 +58,12 @@ public class ConnectedDevicesAdapter extends ArrayAdapter<DeviceState> {
             viewHolder= new ViewHolder();
             viewHolder.deviceName= (TextView) convertView.findViewById(R.id.status_device_name);
             viewHolder.deviceAddress= (TextView) convertView.findViewById(R.id.status_mac_address);
-            viewHolder.deviceOrientation= (TextView) convertView.findViewById(R.id.status_orientation);
+            viewHolder.deviceAcceleration= (TextView) convertView.findViewById(R.id.status_Acceleration);
+            viewHolder.dataAcceleration=convertView.findViewById(R.id.data_acceleration);
+            viewHolder.deviceGYRO=convertView.findViewById(R.id.status_GYRO);
+            viewHolder.dataGYRO=convertView.findViewById(R.id.data_GYRO);
+            viewHolder.deviceAngular=convertView.findViewById(R.id.status_Angular);
+            viewHolder.dataAngular=convertView.findViewById(R.id.data_Angular);
             viewHolder.switchState= (RadioGroup) convertView.findViewById(R.id.status_button);
             viewHolder.connectingText= (TextView) convertView.findViewById(R.id.text_connecting);
             viewHolder.connectingProgress= (ProgressBar) convertView.findViewById(R.id.connecting_progress);
@@ -81,14 +86,30 @@ public class ConnectedDevicesAdapter extends ArrayAdapter<DeviceState> {
         if (state.connecting) {
             viewHolder.connectingProgress.setVisibility(View.VISIBLE);
             viewHolder.connectingText.setVisibility(View.VISIBLE);
-            viewHolder.deviceOrientation.setVisibility(View.GONE);
+            viewHolder.deviceAcceleration.setVisibility(View.GONE);
+            viewHolder.deviceGYRO.setVisibility(View.GONE);
+            viewHolder.deviceAngular.setVisibility(View.GONE);
+            viewHolder.dataAcceleration.setVisibility(View.GONE);
+            viewHolder.dataGYRO.setVisibility(View.GONE);
+            viewHolder.dataAngular.setVisibility(View.GONE);
             viewHolder.switchState.setVisibility(View.GONE);
         } else {
-            viewHolder.deviceOrientation.setVisibility(View.VISIBLE);
+            viewHolder.deviceAcceleration.setVisibility(View.VISIBLE);
+            viewHolder.deviceGYRO.setVisibility(View.VISIBLE);
+            viewHolder.deviceAngular.setVisibility(View.VISIBLE);
+            viewHolder.dataAcceleration.setVisibility(View.VISIBLE);
+            viewHolder.dataGYRO.setVisibility(View.VISIBLE);
+            viewHolder.dataAngular.setVisibility(View.VISIBLE);
             viewHolder.switchState.setVisibility(View.VISIBLE);
 
-            if (state.deviceOrientation != null) {
-                viewHolder.deviceOrientation.setText(state.deviceOrientation);
+            if (state.deviceAngle != null) {
+                viewHolder.dataAngular.setText(state.deviceAngle);
+            }
+            if (state.deviceAcceleration != null) {
+                viewHolder.dataAcceleration.setText(state.deviceAcceleration);
+            }
+            if (state.deviceGYRO != null) {
+                viewHolder.dataGYRO.setText(state.deviceGYRO);
             }
 
             if (state.pressed) {
@@ -109,7 +130,7 @@ public class ConnectedDevicesAdapter extends ArrayAdapter<DeviceState> {
     }
 
     private class ViewHolder {
-        TextView deviceName, deviceAddress, deviceOrientation, connectingText;
+        TextView deviceName, deviceAddress, deviceAcceleration,dataAcceleration,deviceGYRO,dataGYRO,deviceAngular,dataAngular, connectingText;
         RadioGroup switchState;
         ProgressBar connectingProgress;
     }
@@ -121,7 +142,9 @@ public class ConnectedDevicesAdapter extends ArrayAdapter<DeviceState> {
         } else {
             DeviceState current= getItem(pos);
             current.pressed= newState.pressed;
-            current.deviceOrientation= newState.deviceOrientation;
+            current.deviceAngle= newState.deviceAngle;
+            current.deviceAcceleration= newState.deviceAcceleration;
+            current.deviceGYRO= newState.deviceGYRO;
             notifyDataSetChanged();
         }
     }

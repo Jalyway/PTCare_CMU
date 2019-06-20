@@ -83,12 +83,44 @@
     </RadioGroup>
 
     <TextView
+        android:id="@+id/status_Acceleration"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        android:text="@string/orientation"
-        android:id="@+id/status_orientation"
-        android:layout_gravity="center_horizontal"/>
+        android:layout_gravity="center_horizontal"
+        android:text="Acceleration"
+        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+    <TextView
+        android:id="@+id/data_acceleration"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAlignment="center" />
+
+    <TextView
+        android:id="@+id/status_GYRO"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="GYRO"
+        android:textAlignment="center" />
+
+    <TextView
+        android:id="@+id/data_GYRO"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAlignment="center" />
+
+    <TextView
+        android:id="@+id/status_Angular"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="角度"
+        android:textAlignment="center" />
+
+    <TextView
+        android:id="@+id/data_Angular"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAlignment="center" />
 
     <TextView
         android:layout_width="wrap_content"

@@ -65,7 +65,7 @@ public class BleScanner extends Fragment {
     private String mParam2;
 
     //
-    public static final long DEFAULT_SCAN_PERIOD= 5000;
+    public static final long DEFAULT_SCAN_PERIOD= 100000;
     private static final int REQUEST_ENABLE_BT = 1, PERMISSION_REQUEST_COARSE_LOCATION= 2;
 
     TextView txtChange;

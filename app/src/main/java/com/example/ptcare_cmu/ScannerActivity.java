@@ -83,6 +83,25 @@ public class ScannerActivity extends AppCompatActivity implements ScannerCommuni
     }
 
     @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.back_menu, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.back_menu:
+                Intent result= new Intent();
+                result.putParcelableArrayListExtra(EXTRA_DEVICE, null);
+                setResult(RESULT_OK, result);
+                finish();
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         // TODO Auto-generated method stub
 
