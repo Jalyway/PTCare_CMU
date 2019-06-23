@@ -92,6 +92,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -116,12 +117,15 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     public Handler mHandler;
     private DeviceState newDeviceState;
     public int tsec=0;
+    private int count=0;
     private String na=null;
     private Boolean isSDPresent = false;
     private DBHelper dbhelper = null;
     private SQLiteDatabase sdb;
     private String mwMacAddress;
     private boolean isSampling=false;
+    double[] angV = new double[6001];//相對初始的 角速度
+    double[] angL = new double[6001];//相對初始的 角度
 
     private final static int HANDLER_DEVICE_CONNECTED = 3;
     private final static int HANDLER_SHOW_ERROR = 4;
@@ -448,17 +452,19 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
         double AngleX = CalculateAngle(AccelerationData.x(), Denominator);
         double AngleY = CalculateAngle(AccelerationData.y(), Denominator);
         double AngleZ = CalculateAngle(AccelerationData.z(), Denominator);
-        String accel_entry=","+AngleX+","+AngleY+","+AngleZ;
-
-        OutputStream out;
-        try {
-            out = new BufferedOutputStream(new FileOutputStream(na, true));
-            out.write(accel_entry.getBytes());
-            out.write("\n".getBytes());
-            out.close();
-        } catch (Exception e) {
-            Log.e("r", "CSV creation error", e);
-        }
+//        String accel_entry=","+AngleX+","+AngleY+","+AngleZ;
+        String accel_entry=","+AngleX;
+        angL[count]=AngleX;
+        count++;
+//        OutputStream out;
+//        try {
+//            out = new BufferedOutputStream(new FileOutputStream(na, true));
+//            out.write(accel_entry.getBytes());
+//            out.write("\n".getBytes());
+//            out.close();
+//        } catch (Exception e) {
+//            Log.e("r", "CSV creation error", e);
+//        }
 
     }
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////-----------------------CalculateAngle
@@ -526,19 +532,20 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
                         Acceleration data = ((Acceleration) msg.obj);
                         CalculateAngle(data);
 
-                        String accel_entry = String.format("%.6f", data.x()) + "," +
-                                String.format("%.6f", data.y()) + "," +
-                                String.format("%.6f", data.z());
+//                        String accel_entry = String.format("%.6f", data.x()) + "," +
+//                                String.format("%.6f", data.y()) + "," +
+//                                String.format("%.6f", data.z());
+                        String accel_entry = String.valueOf(tsec);
 
-                        OutputStream out;
-                        try {
-                            out = new BufferedOutputStream(new FileOutputStream(na, true));
-                            out.write(accel_entry.getBytes());
-                            //   out.write("\n".getBytes());
-                            out.close();
-                        } catch (Exception e) {
-                            Log.e("r", "CSV creation error", e);
-                        }
+//                        OutputStream out;
+//                        try {
+//                            out = new BufferedOutputStream(new FileOutputStream(na, true));
+//                            out.write(accel_entry.getBytes());
+//                            //   out.write("\n".getBytes());
+//                            out.close();
+//                        } catch (Exception e) {
+//                            Log.e("r", "CSV creation error", e);
+//                        }
 
                     }
 
@@ -549,19 +556,21 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
                         AngularVelocity data = (AngularVelocity) msg.obj;
                         final double Deg2Rad = Math.PI / 180.0;
 
-                        String accel_entry = "," + String.format("%.6f", data.x() * Deg2Rad) + "," +
-                                String.format("%.6f", data.y() * Deg2Rad) + "," +
-                                String.format("%.6f", data.z() * Deg2Rad);
+//                        String accel_entry = "," + String.format("%.6f", data.x() * Deg2Rad) + "," +
+//                                String.format("%.6f", data.y() * Deg2Rad) + "," +
+//                                String.format("%.6f", data.z() * Deg2Rad);
+                        String accel_entry = "," + String.format("%.6f", data.x() * Deg2Rad);
+                        angV[count]=data.x() * Deg2Rad;
                         // String csv_accel_entry = accel_entry ;
-                        OutputStream out;
-                        try {
-                            out = new BufferedOutputStream(new FileOutputStream(na, true));
-                            out.write(accel_entry.getBytes());
-                            //   out.write("\n".getBytes());
-                            out.close();
-                        } catch (Exception e) {
-                            Log.e("r", "CSV creation error", e);
-                        }
+//                        OutputStream out;
+//                        try {
+//                            out = new BufferedOutputStream(new FileOutputStream(na, true));
+//                            out.write(accel_entry.getBytes());
+//                            //   out.write("\n".getBytes());
+//                            out.close();
+//                        } catch (Exception e) {
+//                            Log.e("r", "CSV creation error", e);
+//                        }
 
                     }
                     return false;
@@ -587,11 +596,11 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
 
             String cur=formatter1.format(curDate);
             Log.e("Kenny", removable.toString());
-            File test = new File(removable,cur.trim()+".txt");
+            File test = new File(removable,cur.trim()+".csv");
             try {
                 test.createNewFile(); // Throws the exception mentioned above
                 //test.mkdir();
-                na=test.getParent()+"/"+cur.trim()+".txt";
+                na=test.getParent()+"/"+cur.trim()+".csv";
 
                 isSDPresent=true;
 
@@ -604,6 +613,26 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     }
     //檔案寫入DB
     public void f2d() {
+        //----------------------------------------------------------------------------------------------------------
+        for (int i = 1; i < 6001; i++) {//相對初始值 --> 也就是會比初始值少一筆資料
+                angV[i] = angV[i] - angV[i-1];//相對角速度
+                angL[i] = angL[i] - angL[i-1];//相對角度
+            Log.e("test","Hello"+i+" "+angV[i]+" ,"+angL[i]);
+            OutputStream out;
+            try {
+                FileWriter fw = new FileWriter(na, true);
+                BufferedWriter bw = new BufferedWriter(fw); //將BufferedWeiter與FileWrite物件做連結
+                bw.write("test,");
+                bw.write(String.valueOf(angV[i])+",");
+                Log.e("test","HelloV"+i+" "+String.valueOf(angV[i])+" ,"+String.valueOf(angL[i]));
+                bw.write(String.valueOf(angL[i]));
+                bw.newLine();
+                bw.close();
+            } catch (Exception e) {
+                Log.e("r", "CSV creation error", e);
+            }
+        }
+        //----------------------------------------------------------------------------------------------------------
         //  sdb = dbhelper.getWritableDatabase();
 
         //   dbhelper.openDatabase();
