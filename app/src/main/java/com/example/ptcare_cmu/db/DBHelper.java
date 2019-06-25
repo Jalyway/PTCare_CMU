@@ -45,7 +45,7 @@ public class DBHelper extends SQLiteOpenHelper {
                     " angz TEXT" +
                     ");";
             db.execSQL(INIT_TABLE);
-
+//-------------------------------------------------------------------------------------------------------------------------------------------
             db.execSQL("create table features " +
                     "(_id  INTEGER PRIMARY KEY AUTOINCREMENT," +
                     " acc text," + //相對初始的 加速度
@@ -60,6 +60,7 @@ public class DBHelper extends SQLiteOpenHelper {
                     " accsig text," + //得到加速度變異差
                     " angvsig text" + //得到角速度變異差
                     ");");
+            //---------------------------------------------------------------------------------------------------------------------
             db.execSQL("create table features_all " +
                     "(_id  INTEGER PRIMARY KEY AUTOINCREMENT," +
                     "motionCode TEXT, "+
@@ -91,13 +92,13 @@ public class DBHelper extends SQLiteOpenHelper {
                     "dANGy TEXT, "+
                     "dANGz TEXT"+
                     ");");
-
+//------------------------------------------------------------------------------------------------------------------------------------------
             db.execSQL("create table motion_type " +
                     "(_id  INTEGER PRIMARY KEY AUTOINCREMENT," +
                     " mtype_id text," +
                     " mtype_name text" +
                     ");");
-
+//--------------------------------------------------------------------------------------------------------------------------------------------------
             db.execSQL("insert into motion_type(  mtype_id," +
                     "  mtype_name) values('00','預設類別1')");
 
