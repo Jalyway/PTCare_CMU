@@ -103,7 +103,7 @@ public class MainActivity extends AppCompatActivity {
                         //-------------------------------------------------------------------------
                         FISMotionSample fisMotionSample=new FISMotionSample();
                         List<String> result=fisMotionSample.Recognition("/data/data/com.example.ptcare_cmu/FE_tds_change2_1.fis",
-                                "/data/data/com.example.ptcare_cmu/ExtFlexMotionTest.csv",
+                                "/storage/emulated/0/Android/data/com.example.ptcare_cmu/files/201907011236.csv",///data/data/com.example.ptcare_cmu/ExtFlexMotionTest.csv
                                 "/data/data/com.example.ptcare_cmu/motionGuide1.txt",
                                 "/data/data/com.example.ptcare_cmu/motionCriteria1.txt");
                         for(int i=0; i<result.size();i++){

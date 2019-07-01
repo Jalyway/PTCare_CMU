@@ -64,7 +64,7 @@ import com.mbientlab.metawear.data.Acceleration;
 import com.mbientlab.metawear.data.AngularVelocity;
 import com.mbientlab.metawear.module.Accelerometer;
 import com.mbientlab.metawear.module.AccelerometerBosch;
-import com.mbientlab.metawear.module.AccelerometerMma8452q;
+import com.example.ptcare_cmu.DataTransfer;
 import com.mbientlab.metawear.module.Debug;
 import com.mbientlab.metawear.module.GyroBmi160;
 import com.mbientlab.metawear.module.Switch;
@@ -96,11 +96,16 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     private DeviceState newDeviceState;
     public int tsec=0;
     private String na=null;
+    private String convert_FilePath=null;
     private Boolean isSDPresent = false;
     private DBHelper dbhelper = null;
     private SQLiteDatabase sdb;
     private String mwMacAddress;
     private boolean isSampling=false;
+
+    String accl_entry;
+    String angv_entry;
+    String ang_entry;
 
     private final static int HANDLER_DEVICE_CONNECTED = 3;
     private final static int HANDLER_SHOW_ERROR = 4;
@@ -154,10 +159,15 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
             accelerometer.stop();
             if (accelerometer != null) {
                 accelerometer.configure()
-                        .odr(25f)       // Set sampling frequency to 25Hz, or closest valid ODR
+                        .odr(100f)       // Set sampling frequency to 25Hz, or closest valid ODR
                         .range(4f)      // Set data range to +/-4g, or closet valid range
                         .commit();
                 accelerometer.acceleration().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
+                    accl_entry = String.format("%.6f", data.value(Acceleration.class).x()) + "," +
+                            String.format("%.6f", data.value(Acceleration.class).y())  + "," +
+                            String.format("%.6f", data.value(Acceleration.class).z()) ;
+                    CalculateAngle(data.value(Acceleration.class));
+                    //------------------------------------------------------------------------------------------------------------------------------------
                     mHandler.obtainMessage(HANDLER_UPDATE_ACCELEROMETER_RESULT, data.value(Acceleration.class)).sendToTarget();
                 }));
             }
@@ -170,12 +180,38 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
                 // set the data rat to 50Hz and the
                 // data range to +/- 2000 degrees/s
                 gyroBmi160.configure()
-                        .odr(GyroBmi160.OutputDataRate.ODR_25_HZ)
+                        .odr(GyroBmi160.OutputDataRate.ODR_100_HZ)
                         .range(GyroBmi160.Range.FSR_2000)
                         .commit();
                 gyroBmi160.angularVelocity().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
                     Log.i("mwHome", data.value(AngularVelocity.class).toString());
+                    //-------------------------------------------------------------------------------------------------------------------
+                    final double Deg2Rad = Math.PI / 180.0;
+                    angv_entry =   ","+String.format("%.6f", data.value(AngularVelocity.class).x() * Deg2Rad) + "," +
+                            String.format("%.6f", data.value(AngularVelocity.class).y() * Deg2Rad) + "," +
+                            String.format("%.6f", data.value(AngularVelocity.class).z() * Deg2Rad);
+                    //-------------------------------------------------------------------------------------------------------------------
                     mHandler.obtainMessage(HANDLER_UPDATE_GYRO_RESULT, data.value(AngularVelocity.class)).sendToTarget();
+                }));
+            }
+            if (accelerometer != null) {
+                accelerometer.acceleration().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
+                    if (na!=null){
+                        if(isSampling){
+                            OutputStream out;
+                            try {
+                                out = new BufferedOutputStream(new FileOutputStream(na, true));
+                                out.write(accl_entry.getBytes());
+                                out.write(angv_entry.getBytes());
+                                out.write(ang_entry.getBytes());
+                                out.write("\n".getBytes());
+                                out.close();
+                                Log.e("r", accl_entry+angv_entry+ang_entry);
+                            } catch (Exception e) {
+                                Log.e("r", "CSV creation error", e);
+                            }
+                        }
+                    }
                 }));
             }
             return null;
@@ -257,18 +293,7 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
                 "z:\t" + String.format("%.3f", AngleZ) + "g)";
         newDeviceState.deviceAngle = ans;
 
-        String accel_entry=","+AngleX+","+AngleY+","+AngleZ+"";
-
-        OutputStream out;
-        try {
-            out = new BufferedOutputStream(new FileOutputStream(na, true));
-            out.write(accel_entry.getBytes());
-            out.write("\n".getBytes());
-            out.close();
-        } catch (Exception e) {
-            Log.e("r", "CSV creation error", e);
-        }
-
+        ang_entry=","+AngleX+","+AngleY+","+AngleZ;
     }
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////-----------------------CalculateAngle
     private double CalculateAngle(float Value, double Denominator)      //使用弧度計算角度
@@ -292,7 +317,7 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     }
 
     public void handleStopSampling() {
-
+        isSampling = false;
         accelerometer.acceleration().stop();
         accelerometer.stop();
 
@@ -300,7 +325,6 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
         gyroBmi160.stop();
 
         mHandler.removeCallbacks(runnable); //停止Timer
-        isSampling = false;
     }
     public Runnable runnable = new Runnable() {
         public void run ( ) {
@@ -329,22 +353,7 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
                     if (isSampling) {
                         Acceleration data = ((Acceleration) msg.obj);
                         newDeviceState.deviceAcceleration=data.toString();
-                        CalculateAngle(data);
                         connectedDevices.notifyDataSetChanged();
-
-                        String accel_entry = String.format("%.6f", data.x()) + "," +
-                                String.format("%.6f", data.y())  + "," +
-                                String.format("%.6f", data.z()) ;
-
-                        OutputStream out;
-                        try {
-                            out = new BufferedOutputStream(new FileOutputStream(na, true));
-                            out.write(accel_entry.getBytes());
-                            //   out.write("\n".getBytes());
-                            out.close();
-                        } catch (Exception e) {
-                            Log.e("r", "CSV creation error", e);
-                        }
                     }
 
                     return false;
@@ -352,21 +361,8 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
                     Log.i("handleMessage", "HANDLER_UPDATE_GYRO_RESULT -> (AngularVelocity) msg.obj = " + (AngularVelocity) msg.obj);
                     if (isSampling) {
                         AngularVelocity data = (AngularVelocity) msg.obj;
-                        final double Deg2Rad = Math.PI / 180.0;
                         newDeviceState.deviceGYRO = data.toString();
                         connectedDevices.notifyDataSetChanged();
-                        String accel_entry =   ","+String.format("%.6f", data.x() * Deg2Rad) + "," +
-                                String.format("%.6f", data.y() * Deg2Rad) + "," +
-                                String.format("%.6f", data.z() * Deg2Rad);
-                        OutputStream out;
-                        try {
-                            out = new BufferedOutputStream(new FileOutputStream(na, true));
-                            out.write(accel_entry.getBytes());
-                            //   out.write("\n".getBytes());
-                            out.close();
-                        } catch (Exception e) {
-                            Log.e("r", "CSV creation error", e);
-                        }
                     }
                     return false;
             }
@@ -392,19 +388,22 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
             String cur=formatter1.format(curDate);
             Log.e("Kenny", removable.toString());
             File test = new File(removable,cur.trim()+".txt");
+            File convertFile = new File(removable,cur.trim()+".csv");
             try {
                 test.createNewFile(); // Throws the exception mentioned above
+                convertFile.createNewFile();
                 //test.mkdir();
                 na=test.getParent()+"/"+cur.trim()+".txt";
+                convert_FilePath=convertFile.getParent()+"/"+cur.trim()+".csv";
 
                 isSDPresent=true;
-
             }
             catch (Exception e) {
                 Log.e(getClass().getSimpleName(), "Exception creating file", e);
                 Toast.makeText(getContext(), e.getMessage(), Toast.LENGTH_LONG).show();
             }
         }
+        handleStartSampling();
     }
     //檔案寫入DB
     public void f2d() {
@@ -460,10 +459,15 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
                 }
             }
             sdb.close();  //可自行變化成存入陣列或arrayList方便之後存取
-
         } catch(IOException e) {
             e.printStackTrace();
         }
+    }
+
+    //檔案輸出成csv
+    public void db2CSV(){
+        DataTransfer dataTransfer=new DataTransfer();
+        dataTransfer.calMotion(convert_FilePath,getContext());
     }
 
 }
