@@ -80,12 +80,12 @@ public class DataBleMonitor extends AppCompatActivity {
             case R.id.add_action_code:
                 break;
             case R.id.start_sampling:
-                ((MainActivityFragment) fragment).handleStartSampling();
                 ((MainActivityFragment) fragment).createSysDir();
                 break;
             case R.id.stop_sampling:
                 ((MainActivityFragment) fragment).handleStopSampling();
                 ((MainActivityFragment) fragment).f2d();
+                ((MainActivityFragment) fragment).db2CSV();
                 break;
         }
         return super.onOptionsItemSelected(item);
