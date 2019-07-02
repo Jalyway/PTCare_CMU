@@ -11,6 +11,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -42,7 +43,6 @@ public class ViewRecord extends MainActivity {
     private int selectID;
     private int Hz = 25;
     private String fileName;
-    private String criteriaID;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -96,10 +96,10 @@ public class ViewRecord extends MainActivity {
 
     }
 
-    // Listener for buttons click
+    // Listener for buttons click //
     public void btn1Listener(View v) {
         fileName = sprCriteria[0][selectID];   //檔名
-        criteriaID = sprCriteria[1][selectID]; //所選準則 ID
+        String criteriaID = sprCriteria[1][selectID]; //所選準則 ID
         String[] criteriaInfo = getCriteria(criteriaID);  //得到準則資訊：循環次數、動作代碼、動作秒數
 
         String[] strArray = criteriaInfo[2].split(", ");  //準則動作秒數(動作時程)
@@ -116,15 +116,17 @@ public class ViewRecord extends MainActivity {
             mot[i] = Integer.parseInt(numberAsString);
         }
 
-        List motCode1 = getMotionCode(Hz, Integer.valueOf(criteriaInfo[0]), sch, mot); //計算無變異差特徵-->需要頻率
-        getFeatures(motCode1);
+        List motionCode = getMotionCode(Hz, Integer.valueOf(criteriaInfo[0]), sch, mot); //計算無變異差特徵-->需要頻率
+        getFeatures(motionCode);
     }
 
     public void btn2Listener(View v) {
-        File removable = ContextCompat.getExternalFilesDirs(this, null)[1];
+        fileName = sprCriteria[0][selectID];   //檔名
+        File removable = ContextCompat.getExternalFilesDirs(this, null)[0];  //存在外部儲存空間
+        //Log.e("InternalFileDirs",removable.getPath());
         if (removable.exists() && removable.canRead() && removable.canWrite()) {
 
-            SimpleDateFormat formatter1 = new SimpleDateFormat("MMddHHmmss");
+            SimpleDateFormat formatter1 = new SimpleDateFormat("YYYYMMddHHmm");
             Date curDate = new Date(System.currentTimeMillis()); //獲取當前時間
 
             String cur = formatter1.format(curDate);
@@ -135,7 +137,7 @@ public class ViewRecord extends MainActivity {
                 // test.mkdir();
                 // na=test.getParent()+"/test2.csv";
 
-                boolean isSDPresent = true;
+                boolean isSDPresent = true;  // SD卡
                 CSVWriter csvWrite = new CSVWriter(new FileWriter(test));
                 SQLiteDatabase db = dbHelper.getReadableDatabase();
                 Cursor curCSV = db.rawQuery("SELECT * FROM features_all", null);
@@ -144,7 +146,6 @@ public class ViewRecord extends MainActivity {
                     curCSV.close();
                     db.close();
                     Toast.makeText(this, "查無資料\n請先執行產生特徵，再執行產生CSV", Toast.LENGTH_LONG).show();
-
                 }
                 else {
                     csvWrite.writeNext(curCSV.getColumnNames());
@@ -173,22 +174,35 @@ public class ViewRecord extends MainActivity {
                                  .setPositiveButton("確定", new DialogInterface.OnClickListener() {
                                      @Override
                                      public void onClick(DialogInterface dialog, int which) {
-                                         ////
+                                         startActivity(new Intent(getApplicationContext(), UploadRec.class));
                                      }
                                  })
                                  .setNegativeButton("取消", null)
                                  .create()
                                  .show();
                 }
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 Log.e(getClass().getSimpleName(), "Exception creating file", e);
                 Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
             }
         }
     }
-    public void btn3Listener(View v) {
 
+    public void btn3Listener(View v) {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        String[] sql = new String[]{"jy61_record","features_all"};
+        String[] msgstr = {"metawear收入資料筆數 ","產生動作特徵筆數"};
+
+        for(int i=0; i<2; i++) {
+            String sqlStr = sql[i];
+            SQLiteStatement statement = db.compileStatement("SELECT COUNT(*) FROM  " + sqlStr);
+            long count = statement.simpleQueryForLong();
+            if (count < Integer.MIN_VALUE || count > Integer.MAX_VALUE) {
+                throw new IllegalArgumentException(count + " cannot be cast to int without changing its value.");
+            }
+            Toast.makeText(this, msgstr[i] + ": " + count, Toast.LENGTH_SHORT).show();
+        }
+        db.close();
     }
 
 
@@ -203,7 +217,7 @@ public class ViewRecord extends MainActivity {
             criteria[0] = result.getString(2);  //循環次數
             criteria[1] = result.getString(3);  //動作代碼
             criteria[2] = result.getString(4);  //動作秒數
-    }
+        }
         result.close();
         database.close();
         // Toast.makeText(this, criteria[0],Toast.LENGTH_LONG).show();
@@ -255,6 +269,7 @@ public class ViewRecord extends MainActivity {
 
         if (c != null) {
             int rows_num = c.getCount();
+            //Toast.makeText(this,"rows_num:"+rows_num,Toast.LENGTH_LONG).show();  //
 
             double[][] Racc = new double[rows_num][3];//加速度
             double[][] RangV = new double[rows_num][3];//角速度
@@ -279,47 +294,51 @@ public class ViewRecord extends MainActivity {
                     k++;
                     c.moveToNext();  //將指標移至下一筆資料
                 }
-            }
-            c.close(); //關閉Cursor
-            db.close();
+                c.close(); //關閉Cursor
+                db.close();
 
-            double[][] acc = new double[rows_num][3]; //相對初始的 加速度
-            double[][] angV = new double[rows_num][3]; //相對初始的 角速度
-            double[][] angL = new double[rows_num][3]; //相對初始的 角度
 
-            for (int i = 0; i < acc.length - 1; i++) {//相對初始值 --> 也就是會比初始值少一筆資料
-                for (int j = 0; j < 3; j++) {  //Note: 昀姍原始程式有誤, 只有算x軸
-                    acc[i][j] = Racc[i + 1][j] - Racc[0][j];//相對加速度
-                    angV[i][j] = RangV[i + 1][j] - RangV[0][j];//相對角速度
-                    angL[i][j] = RangL[i + 1][j] - RangL[0][j];//相對角度
+                double[][] acc = new double[rows_num][3]; //相對初始的 加速度
+                double[][] angV = new double[rows_num][3]; //相對初始的 角速度
+                double[][] angL = new double[rows_num][3]; //相對初始的 角度
+
+                for (int i = 0; i < acc.length - 1; i++) {//相對初始值 --> 也就是會比初始值少一筆資料
+                    for (int j = 0; j < 3; j++) {  //Note: 昀姍原始程式有誤, 只有算x軸
+                        acc[i][j] = Racc[i + 1][j] - Racc[0][j];//相對加速度
+                        angV[i][j] = RangV[i + 1][j] - RangV[0][j];//相對角速度
+                        angL[i][j] = RangL[i + 1][j] - RangL[0][j];//相對角度
+                    }
                 }
-            }
-            // int hz=100;     //待修改----------------------------------------------
-            double dt = 1.0 / Hz; //將頻率轉成時間間隔
-            //分析資料2－加速度/角速度變率(利用相對初始值)
-            double[][] accVar = new double[rows_num][3]; //加速度 變率
-            double[][] angVar = new double[rows_num][3]; //角速度 變率
-            double[][] angLVar = new double[rows_num][3]; //角度 變率
-            for (int i = 0; i < acc.length - 1; i++) {
-                for (int j = 0; j < 3; j++) {
-                    accVar[i][j] = (Racc[i + 1][j] - Racc[i][j]) / dt; //加速度 變率
-                    angVar[i][j] = (RangV[i + 1][j] - RangV[i][j]) / dt; //角速度 變率
-                    angLVar[i][j] = (RangL[i + 1][j] - RangL[i][j]) / dt; //角度 變率
+                // int hz=100;     //待修改----------------------------------------------
+                double dt = 1.0 / Hz; //將頻率轉成時間間隔
+                //分析資料2－加速度/角速度變率(利用相對初始值)
+                double[][] accVar = new double[rows_num][3]; //加速度 變率
+                double[][] angVar = new double[rows_num][3]; //角速度 變率
+                double[][] angLVar = new double[rows_num][3]; //角度 變率
+                for (int i = 0; i < acc.length - 1; i++) {
+                    for (int j = 0; j < 3; j++) {
+                        accVar[i][j] = (Racc[i + 1][j] - Racc[i][j]) / dt; //加速度 變率
+                        angVar[i][j] = (RangV[i + 1][j] - RangV[i][j]) / dt; //角速度 變率
+                        angLVar[i][j] = (RangL[i + 1][j] - RangL[i][j]) / dt; //角度 變率
+                    }
                 }
+
+
+                //分析資料3－加速度/角速度變異差(利用相對初始值)
+                // int L = countn / hz;//得到資料筆數(每一秒算一個標準差，所以後面多餘的就去除 (ex: 100hz表1秒中有100筆)
+                // double[][] accSig = getSig(acc, L);//得到加速度變異差
+                // double[][] angVSig = getSig(angV, L);//得到角速度變異差
+                double[][] cosAng = getCosData(angL, true);//得到取cos之角速度
+                double[][] normAcc = getNormData(acc);//得到標準化(正規化)之加速度
+                double[][] normAngV = getNormData(angV);//得到標準化(正規化)之角速度
+
+                // writeData(100, acc, angV, angL, normAcc, normAngV, cosAng, accVar, angVar, angLVar, mo);
+                writeData(25, acc, angV, angL, normAcc, normAngV, cosAng, accVar, angVar, angLVar, motion);
+                Toast.makeText(this,"資料已寫入",Toast.LENGTH_LONG).show();
+
             }
-
-
-            //分析資料3－加速度/角速度變異差(利用相對初始值)
-            // int L = countn / hz;//得到資料筆數(每一秒算一個標準差，所以後面多餘的就去除 (ex: 100hz表1秒中有100筆)
-            // double[][] accSig = getSig(acc, L);//得到加速度變異差
-            // double[][] angVSig = getSig(angV, L);//得到角速度變異差
-            double[][] cosAng = getCosData(angL, true);//得到取cos之角速度
-            double[][] normAcc = getNormData(acc);//得到標準化(正規化)之加速度
-            double[][] normAngV = getNormData(angV);//得到標準化(正規化)之角速度
-
-            // writeData(100, acc, angV, angL, normAcc, normAngV, cosAng, accVar, angVar, angLVar, mo);
-            writeData(25, acc, angV, angL, normAcc, normAngV, cosAng, accVar, angVar, angLVar, motion);
-            Toast.makeText(this,"資料已寫入",Toast.LENGTH_LONG).show();
+            else
+                Toast.makeText(this,"沒有錄製數據資料",Toast.LENGTH_LONG).show();
         }
     }
 
@@ -370,7 +389,7 @@ public class ViewRecord extends MainActivity {
     }
 
     // 標準化, 讓資料介於-1~1之間
-    public double[][] getNormData(double[][] data) { //輸入資料
+    public double[][] getNormData(double[][] data) {
         int N = data.length;
         double[][] normData = new double[N][3];
         for (int i = 0; i < 3; i++) {

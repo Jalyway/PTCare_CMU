@@ -35,19 +35,23 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:onClick="btn1Listener"
-            android:text="加入動作代碼" />
+            android:text="加入動作代碼"
+            android:textSize="16sp" />
 
         <Button
             android:id="@+id/button2"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:onClick="btn2Listener"
-            android:text="產生特微檔(CSV)" />
+            android:text="產生特微檔(CSV)"
+            android:textSize="16sp" />
 
         <Button
             android:id="@+id/button3"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="顯示資料筆數" />
+            android:onClick="btn3Listener"
+            android:text="顯示資料筆數"
+            android:textSize="16sp" />
     </LinearLayout>
 </android.support.constraint.ConstraintLayout>

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.example.ptcare_cmu">
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -8,6 +9,10 @@
     <uses-permission android:name="android.permission.BLUETOOTH" />
 
     <!-- <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS" /> -->
+    <uses-permission
+        android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS"
+        tools:ignore="ProtectedPermissions">
+    </uses-permission>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
@@ -35,10 +40,11 @@
         <activity android:name=".ModifyMotion" android:label="修改動作" />
         <activity android:name=".EditCriteria" android:label="編輯準則" />
         <activity android:name=".ShowCriteria" android:label="準則資訊"/>
-        <activity android:name=".ViewRecord"  android:label="特徵" />
+        <activity android:name=".ViewRecord"  android:label="產生特徵" />
         <activity android:name=".UploadRec" android:label="上傳檔案" />
         <activity android:name=".DataBleMonitor" android:label="接收藍芽" />
         <activity android:name=".ScannerActivity" android:label="選擇裝置" />
+        <activity android:name=".Download" android:label="下載檔案" />
     </application>
 
 </manifest>
