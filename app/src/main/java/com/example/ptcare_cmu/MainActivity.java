@@ -5,12 +5,8 @@ package com.example.ptcare_cmu;
  */
 
 import android.app.ActivityManager;
-import android.app.DownloadManager;
-import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -19,9 +15,12 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.util.EntityUtils;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -31,7 +30,12 @@ import java.util.List;
 import FISmain.FISMotionSample;
 
 public class MainActivity extends AppCompatActivity {
-    DownloadManager downloadManager;
+    HttpClient httpClient = new DefaultHttpClient();
+    HttpGet get;
+    HttpResponse response;
+    HttpEntity resEntity;
+    String result;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -60,17 +64,15 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         try {
-                            Document doc = Jsoup.connect("http://140.128.65.114:8000/PRRFISHome/PTC/fis/motionCriteria1.txt").get();
-                            Elements elements = doc.select("body");
-                            Log.i("mytag",elements.text());
+                            get = new HttpGet("http://140.128.65.114:8000/PRRFISHome/PTC/fis/motionCriteria1.txt");
+                            response = httpClient.execute(get);
+                            resEntity = response.getEntity();
+                            result = EntityUtils.toString(resEntity);
 
                             try{
                                 FileWriter fw = new FileWriter("/data/data/com.example.ptcare_cmu/motionCriteria1.txt", false);
                                 BufferedWriter bw = new BufferedWriter(fw); //將BufferedWeiter與FileWrite物件做連結
-                                String[] ss=elements.text().split("\\s");
-                                for (int i=0; i<ss.length;i++) {
-                                    bw.write(ss[i]+"\n");
-                                }
+                                bw.write(result);
                                 bw.newLine();
                                 bw.close();
                             }catch(IOException e){
@@ -81,17 +83,33 @@ public class MainActivity extends AppCompatActivity {
                         }
                         //
                         try {
-                            Document doc = Jsoup.connect("http://140.128.65.114:8000/PRRFISHome/PTC/fis/motionGuide1.txt").get();
-                            Elements elements = doc.select("body");
-                            Log.i("mytag",elements.text());
+                            get = new HttpGet("http://140.128.65.114:8000/PRRFISHome/PTC/fis/motionGuide1.txt");
+                            response = httpClient.execute(get);
+                            resEntity = response.getEntity();
+                            result = EntityUtils.toString(resEntity);
 
                             try{
                                 FileWriter fw = new FileWriter("/data/data/com.example.ptcare_cmu/motionGuide1.txt", false);
                                 BufferedWriter bw = new BufferedWriter(fw); //將BufferedWeiter與FileWrite物件做連結
-                                String[] ss=elements.text().split("\\n");
-                                for (int i=0; i<ss.length;i++) {
-                                    bw.write(ss[i]+"\n");
-                                }
+                                bw.write(result);
+                                bw.newLine();
+                                bw.close();
+                            }catch(IOException e){
+                                e.printStackTrace();
+                            }
+                        }catch(Exception e) {
+                            Log.i("mytag", e.toString());
+                        }
+                        //
+                        try {
+                            get = new HttpGet("http://140.128.65.114:8000/PRRFISHome/PTC/fis/T01_flex_ext.fis");
+                            response = httpClient.execute(get);
+                            resEntity = response.getEntity();
+                            result = EntityUtils.toString(resEntity);
+                            try{
+                                FileWriter fw = new FileWriter("/data/data/com.example.ptcare_cmu/T01_flex_ext.fis", false);
+                                BufferedWriter bw = new BufferedWriter(fw); //將BufferedWeiter與FileWrite物件做連結
+                                bw.write(result);
                                 bw.newLine();
                                 bw.close();
                             }catch(IOException e){
@@ -102,8 +120,8 @@ public class MainActivity extends AppCompatActivity {
                         }
                         //-------------------------------------------------------------------------
                         FISMotionSample fisMotionSample=new FISMotionSample();
-                        List<String> result=fisMotionSample.Recognition("/data/data/com.example.ptcare_cmu/FE_tds_change2_1.fis",
-                                "/storage/emulated/0/Android/data/com.example.ptcare_cmu/files/201907011236.csv",///data/data/com.example.ptcare_cmu/ExtFlexMotionTest.csv
+                        List<String> result=fisMotionSample.Recognition("/data/data/com.example.ptcare_cmu/T01_flex_ext.fis",
+                                "/storage/emulated/0/Android/data/com.example.ptcare_cmu/files/201907011408.csv",///data/data/com.example.ptcare_cmu/ExtFlexMotionTest.csv
                                 "/data/data/com.example.ptcare_cmu/motionGuide1.txt",
                                 "/data/data/com.example.ptcare_cmu/motionCriteria1.txt");
                         for(int i=0; i<result.size();i++){

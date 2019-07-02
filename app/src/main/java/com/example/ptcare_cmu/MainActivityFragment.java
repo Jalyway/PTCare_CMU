@@ -303,7 +303,7 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     } // end CalculateAngleByRadian
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void handleStartSampling() {
-
+        isSampling = true;
         accelerometer.acceleration().start();
         accelerometer.start();
 
@@ -312,8 +312,6 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
 
         tsec=0;
         mHandler.postDelayed(runnable,1000); // 開始Timer
-
-        isSampling = true;
     }
 
     public void handleStopSampling() {
