@@ -1,6 +1,7 @@
 package com.example.ptcare_cmu;
 
 import android.app.Activity;
+import android.app.Dialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -9,6 +10,8 @@ import android.content.Intent;
 import android.content.IntentSender;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
@@ -36,16 +39,18 @@ public class DataBleMonitor extends AppCompatActivity {
     private static final int REQUEST_ENABLE_BT = 2;
     private static final int REQUEST_ENABLE_LOCATION = 3;
 
+    Fragment fragment;
     //private BluetoothAdapter bluetoothAdapter;
     //private LocationManager locationStatus;
     int count = 0;
+    progressLoad_dialog progressLoad_dialog;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_blemain);
-
+        //------------------------------------------------------------------------------------------------------
         // 確認是否有開啟藍芽功能
         BluetoothManager bluetoothManager = (BluetoothManager) this.getSystemService(Context.BLUETOOTH_SERVICE);
         BluetoothAdapter bluetoothAdapter = bluetoothManager.getAdapter();
@@ -75,17 +80,18 @@ public class DataBleMonitor extends AppCompatActivity {
     }
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.main_activity_content);
+        fragment = getSupportFragmentManager().findFragmentById(R.id.main_activity_content);
         switch (item.getItemId()) {
             case R.id.add_action_code:
                 break;
             case R.id.start_sampling:
-                ((MainActivityFragment) fragment).createSysDir();
+                ((MainActivityFragment) fragment).handleStartSampling();
                 break;
             case R.id.stop_sampling:
-                ((MainActivityFragment) fragment).handleStopSampling();
-                ((MainActivityFragment) fragment).f2d();
-                ((MainActivityFragment) fragment).db2CSV();
+                progressLoad_dialog=new progressLoad_dialog();
+                progressLoad_dialog.show(getFragmentManager(),"loading");
+                Thread t1=new LoadThread();
+                t1.start();
                 break;
         }
         return super.onOptionsItemSelected(item);
@@ -184,7 +190,15 @@ public class DataBleMonitor extends AppCompatActivity {
             }
         });
     }
-
-
-
+    class LoadThread extends Thread {
+        public void run(){
+            ((MainActivityFragment) fragment).handleStopSampling();
+            ((MainActivityFragment) fragment).data2file();
+            ((MainActivityFragment) fragment).f2d();
+            ((MainActivityFragment) fragment).db2CSV();
+            progressLoad_dialog.dismiss();
+            finish();
+            startActivity(new Intent(getApplicationContext(), Download.class));
+        }
+    }
 }

@@ -14,14 +14,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
-
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.util.EntityUtils;
-
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -30,12 +22,6 @@ import java.util.List;
 import FISmain.FISMotionSample;
 
 public class MainActivity extends AppCompatActivity {
-    HttpClient httpClient = new DefaultHttpClient();
-    HttpGet get;
-    HttpResponse response;
-    HttpEntity resEntity;
-    String result;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -54,84 +40,6 @@ public class MainActivity extends AppCompatActivity {
         btnPre4.setOnClickListener(btnListener);
         btnPre5.setOnClickListener(btnListener);
         btnPre6.setOnClickListener(btnListener);
-
-        Button btn_recog=findViewById(R.id.bt_recognition);
-        btn_recog.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                //
-                new Thread(new Runnable(){
-                    @Override
-                    public void run() {
-                        try {
-                            get = new HttpGet("http://140.128.65.114:8000/PRRFISHome/PTC/fis/motionCriteria1.txt");
-                            response = httpClient.execute(get);
-                            resEntity = response.getEntity();
-                            result = EntityUtils.toString(resEntity);
-
-                            try{
-                                FileWriter fw = new FileWriter("/data/data/com.example.ptcare_cmu/motionCriteria1.txt", false);
-                                BufferedWriter bw = new BufferedWriter(fw); //將BufferedWeiter與FileWrite物件做連結
-                                bw.write(result);
-                                bw.newLine();
-                                bw.close();
-                            }catch(IOException e){
-                                e.printStackTrace();
-                            }
-                        }catch(Exception e) {
-                            Log.i("mytag", e.toString());
-                        }
-                        //
-                        try {
-                            get = new HttpGet("http://140.128.65.114:8000/PRRFISHome/PTC/fis/motionGuide1.txt");
-                            response = httpClient.execute(get);
-                            resEntity = response.getEntity();
-                            result = EntityUtils.toString(resEntity);
-
-                            try{
-                                FileWriter fw = new FileWriter("/data/data/com.example.ptcare_cmu/motionGuide1.txt", false);
-                                BufferedWriter bw = new BufferedWriter(fw); //將BufferedWeiter與FileWrite物件做連結
-                                bw.write(result);
-                                bw.newLine();
-                                bw.close();
-                            }catch(IOException e){
-                                e.printStackTrace();
-                            }
-                        }catch(Exception e) {
-                            Log.i("mytag", e.toString());
-                        }
-                        //
-                        try {
-                            get = new HttpGet("http://140.128.65.114:8000/PRRFISHome/PTC/fis/T01_flex_ext.fis");
-                            response = httpClient.execute(get);
-                            resEntity = response.getEntity();
-                            result = EntityUtils.toString(resEntity);
-                            try{
-                                FileWriter fw = new FileWriter("/data/data/com.example.ptcare_cmu/T01_flex_ext.fis", false);
-                                BufferedWriter bw = new BufferedWriter(fw); //將BufferedWeiter與FileWrite物件做連結
-                                bw.write(result);
-                                bw.newLine();
-                                bw.close();
-                            }catch(IOException e){
-                                e.printStackTrace();
-                            }
-                        }catch(Exception e) {
-                            Log.i("mytag", e.toString());
-                        }
-                        //-------------------------------------------------------------------------
-                        FISMotionSample fisMotionSample=new FISMotionSample();
-                        List<String> result=fisMotionSample.Recognition("/data/data/com.example.ptcare_cmu/T01_flex_ext.fis",
-                                "/storage/emulated/0/Android/data/com.example.ptcare_cmu/files/201907011408.csv",///data/data/com.example.ptcare_cmu/ExtFlexMotionTest.csv
-                                "/data/data/com.example.ptcare_cmu/motionGuide1.txt",
-                                "/data/data/com.example.ptcare_cmu/motionCriteria1.txt");
-                        for(int i=0; i<result.size();i++){
-                            Log.e("Kenny",result.get(i));
-                        }
-                    }
-                }).start();
-            }
-        });
-
     }
 
     View.OnClickListener btnListener = new View.OnClickListener() {

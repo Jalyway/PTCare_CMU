@@ -1,0 +1,15 @@
+pause|-1
+pronation|17
+inversion|14
+radial dev.|11
+IR|8
+ABD|5
+flex.|3
+rest_up|2
+rest_down|0
+ext.|1
+ADD|-6
+ER|-8
+ulna dev.|-12
+eversion|-15
+supination|-18

@@ -1,0 +1,3 @@
+5
+rest_down|ext.|rest_up|flex.
+0,2,6,8,12

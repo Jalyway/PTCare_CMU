@@ -49,12 +49,18 @@
             android:text="檔案名稱 :"
             android:textSize="16sp" />
 
-        <EditText
+        <TextView
             android:id="@+id/fileName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:ems="10"
-            android:inputType="textPersonName" />
+            android:textSize="16sp" />
+
+        <Button
+            android:id="@+id/bt_chooseFIle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="選擇檔案"
+            android:textSize="16sp" />
 
         <Button
             android:id="@+id/download_btn"
