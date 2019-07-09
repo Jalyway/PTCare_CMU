@@ -46,7 +46,7 @@ public class Download extends MainActivity {
     private ProgressBar progressBar;
     private Button download_Btn,chooseFile_Btn;
     private TextView tvResult,fileName;
-    String str = "\n偵測結果\n";
+    String str = "偵測結果\n";
     private boolean connected = false;
     private String[] motions = {"請選擇","flex_ext","ABD ADD","int_ext_rot","pron_supin","rad_uln_dev"};
 
@@ -199,7 +199,7 @@ public class Download extends MainActivity {
                             "/data/data/com.example.ptcare_cmu/motionCriteria1.txt");
                     for(int i=0; i<result.size(); i++) {
                         Log.e("Kenny", result.get(i));
-                        str += result.get(i);
+                        str += result.get(i)+"\n";
                     }
 
 
