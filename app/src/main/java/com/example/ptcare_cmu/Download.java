@@ -56,7 +56,7 @@ public class Download extends MainActivity {
     HttpGet get;
     HttpResponse response;
     HttpEntity resEntity;
-    String result;
+    String writer;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -140,12 +140,12 @@ public class Download extends MainActivity {
                         get = new HttpGet("http://140.128.65.114:8000/PRRFISHome/PTC/fis/motionCriteria1.txt");
                         response = httpClient.execute(get);
                         resEntity = response.getEntity();
-                        result = EntityUtils.toString(resEntity);
+                        writer = EntityUtils.toString(resEntity);
 
                         try{
                             FileWriter fw = new FileWriter("/data/data/com.example.ptcare_cmu/motionCriteria1.txt", false);
                             BufferedWriter bw = new BufferedWriter(fw); //將BufferedWeiter與FileWrite物件做連結
-                            bw.write(result);
+                            bw.write(writer);
                             bw.newLine();
                             bw.close();
                         }catch(IOException e){
@@ -159,12 +159,12 @@ public class Download extends MainActivity {
                         get = new HttpGet("http://140.128.65.114:8000/PRRFISHome/PTC/fis/motionGuide1.txt");
                         response = httpClient.execute(get);
                         resEntity = response.getEntity();
-                        result = EntityUtils.toString(resEntity);
+                        writer = EntityUtils.toString(resEntity);
 
                         try{
                             FileWriter fw = new FileWriter("/data/data/com.example.ptcare_cmu/motionGuide1.txt", false);
                             BufferedWriter bw = new BufferedWriter(fw); //將BufferedWeiter與FileWrite物件做連結
-                            bw.write(result);
+                            bw.write(writer);
                             bw.newLine();
                             bw.close();
                         }catch(IOException e){
@@ -178,11 +178,11 @@ public class Download extends MainActivity {
                         get = new HttpGet("http://140.128.65.114:8000/PRRFISHome/PTC/fis/T01_flex_ext.fis");
                         response = httpClient.execute(get);
                         resEntity = response.getEntity();
-                        result = EntityUtils.toString(resEntity);
+                        writer = EntityUtils.toString(resEntity);
                         try{
                             FileWriter fw = new FileWriter("/data/data/com.example.ptcare_cmu/T01_flex_ext.fis", false);
                             BufferedWriter bw = new BufferedWriter(fw); //將BufferedWeiter與FileWrite物件做連結
-                            bw.write(result);
+                            bw.write(writer);
                             bw.newLine();
                             bw.close();
                         }catch(IOException e){
