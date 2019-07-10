@@ -349,7 +349,7 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
 
         if (removable.exists() && removable.canRead() && removable.canWrite()) {
 
-            SimpleDateFormat formatter1 = new SimpleDateFormat("YYYYMMddHHmm ");
+            SimpleDateFormat formatter1 = new SimpleDateFormat("yyyyMMddHHmm ");
             Date curDate = new Date(System.currentTimeMillis());//獲取當前時間
 
             String cur=formatter1.format(curDate);

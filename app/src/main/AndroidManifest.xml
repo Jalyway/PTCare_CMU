@@ -45,6 +45,7 @@
         <activity android:name=".DataBleMonitor" android:label="接收藍芽" />
         <activity android:name=".ScannerActivity" android:label="選擇裝置" />
         <activity android:name=".Download" android:label="下載檔案" />
+        <activity android:name=".LineChartActivity" />
     </application>
 
 </manifest>

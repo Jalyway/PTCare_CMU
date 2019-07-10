@@ -51,6 +51,11 @@ public class LineChartActivity extends AppCompatActivity {
         cartesian.xAxis(0).labels().padding(5d, 5d, 5d, 5d);
 
         List<DataEntry> seriesData = new ArrayList<>();
+/*
+        for(int i=0;i<Download.result.size();i++)
+            seriesData.add(new CustomDataEntry(""+(i+1), Integer.parseInt(Download.result.get(i)), 0, 0));
+            */
+
         seriesData.add(new CustomDataEntry("1", 0, 0, 0));
         seriesData.add(new CustomDataEntry("2", 0, 0, 0));
         seriesData.add(new CustomDataEntry("3", 0, 0, 0));
