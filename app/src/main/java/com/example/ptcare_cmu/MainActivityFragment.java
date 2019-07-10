@@ -33,6 +33,7 @@
 package com.example.ptcare_cmu;
 
 import android.app.Activity;
+import android.app.Dialog;
 import android.bluetooth.BluetoothDevice;
 import android.content.ComponentName;
 import android.content.Context;
@@ -63,8 +64,6 @@ import com.mbientlab.metawear.android.BtleService;
 import com.mbientlab.metawear.data.Acceleration;
 import com.mbientlab.metawear.data.AngularVelocity;
 import com.mbientlab.metawear.module.Accelerometer;
-import com.mbientlab.metawear.module.AccelerometerBosch;
-import com.example.ptcare_cmu.DataTransfer;
 import com.mbientlab.metawear.module.Debug;
 import com.mbientlab.metawear.module.GyroBmi160;
 import com.mbientlab.metawear.module.Switch;
@@ -78,8 +77,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 
 import bolts.Continuation;
 import bolts.Task;
@@ -95,20 +97,21 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     public Handler mHandler;
     private DeviceState newDeviceState;
     public int tsec=0;
+    private boolean isSampling=false;
     private String na=null;
     private String convert_FilePath=null;
     private Boolean isSDPresent = false;
     private DBHelper dbhelper = null;
     private SQLiteDatabase sdb;
     private String mwMacAddress;
-    private boolean isSampling=false;
+    private List<String> accL=new ArrayList<>();
+    private List<String> angvL=new ArrayList<>();
+    private List<String> angL=new ArrayList<>();
 
     String accl_entry;
     String angv_entry;
     String ang_entry;
 
-    private final static int HANDLER_DEVICE_CONNECTED = 3;
-    private final static int HANDLER_SHOW_ERROR = 4;
     private final static int HANDLER_UPDATE_ACCELEROMETER_RESULT = 100;
     private final static int HANDLER_UPDATE_GYRO_RESULT = 105;
     private ConnectedDevicesAdapter connectedDevices= null;
@@ -121,6 +124,7 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mHandler = new Handler(new handlerUpdate());
+
 
         dbhelper = new DBHelper(getContext());
         dbhelper.openDatabase();
@@ -163,9 +167,6 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
                         .range(4f)      // Set data range to +/-4g, or closet valid range
                         .commit();
                 accelerometer.acceleration().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
-                    accl_entry = String.format("%.6f", data.value(Acceleration.class).x()) + "," +
-                            String.format("%.6f", data.value(Acceleration.class).y())  + "," +
-                            String.format("%.6f", data.value(Acceleration.class).z()) ;
                     CalculateAngle(data.value(Acceleration.class));
                     //------------------------------------------------------------------------------------------------------------------------------------
                     mHandler.obtainMessage(HANDLER_UPDATE_ACCELEROMETER_RESULT, data.value(Acceleration.class)).sendToTarget();
@@ -175,6 +176,7 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
             gyroBmi160 = newBoard.getModule(GyroBmi160.class);
             gyroBmi160.angularVelocity().stop();
             gyroBmi160.stop();
+
             if (gyroBmi160 != null) {
 //                    listSensors.add("Gyro");
                 // set the data rat to 50Hz and the
@@ -184,34 +186,7 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
                         .range(GyroBmi160.Range.FSR_2000)
                         .commit();
                 gyroBmi160.angularVelocity().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
-                    Log.i("mwHome", data.value(AngularVelocity.class).toString());
-                    //-------------------------------------------------------------------------------------------------------------------
-                    final double Deg2Rad = Math.PI / 180.0;
-                    angv_entry =   ","+String.format("%.6f", data.value(AngularVelocity.class).x() * Deg2Rad) + "," +
-                            String.format("%.6f", data.value(AngularVelocity.class).y() * Deg2Rad) + "," +
-                            String.format("%.6f", data.value(AngularVelocity.class).z() * Deg2Rad);
-                    //-------------------------------------------------------------------------------------------------------------------
                     mHandler.obtainMessage(HANDLER_UPDATE_GYRO_RESULT, data.value(AngularVelocity.class)).sendToTarget();
-                }));
-            }
-            if (accelerometer != null) {
-                accelerometer.acceleration().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
-                    if (na!=null){
-                        if(isSampling){
-                            OutputStream out;
-                            try {
-                                out = new BufferedOutputStream(new FileOutputStream(na, true));
-                                out.write(accl_entry.getBytes());
-                                out.write(angv_entry.getBytes());
-                                out.write(ang_entry.getBytes());
-                                out.write("\n".getBytes());
-                                out.close();
-                                Log.e("r", accl_entry+angv_entry+ang_entry);
-                            } catch (Exception e) {
-                                Log.e("r", "CSV creation error", e);
-                            }
-                        }
-                    }
                 }));
             }
             return null;
@@ -255,14 +230,6 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
 
             Accelerometer accelerometer = selectedBoard.getModule(Accelerometer.class);
             accelerometer.stop();
-            if (accelerometer instanceof AccelerometerBosch) {
-                //((AccelerometerBosch) accelerometer).orientation().stop();
-                accelerometer.acceleration().stop();
-            } else {
-                //((AccelerometerMma8452q) accelerometer).orientation().stop();
-                accelerometer.acceleration().stop();
-            }
-
             selectedBoard.tearDown();
             selectedBoard.getModule(Debug.class).disconnectAsync();
 
@@ -292,8 +259,10 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
                 "y:\t" + String.format("%.3f", AngleY) + "g, " +
                 "z:\t" + String.format("%.3f", AngleZ) + "g)";
         newDeviceState.deviceAngle = ans;
-
         ang_entry=","+AngleX+","+AngleY+","+AngleZ;
+        if (isSampling){
+            angL.add(ang_entry);
+        }
     }
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////-----------------------CalculateAngle
     private double CalculateAngle(float Value, double Denominator)      //使用弧度計算角度
@@ -315,12 +284,12 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     }
 
     public void handleStopSampling() {
-        isSampling = false;
         accelerometer.acceleration().stop();
         accelerometer.stop();
 
         gyroBmi160.angularVelocity().stop();
         gyroBmi160.stop();
+        isSampling = false;
 
         mHandler.removeCallbacks(runnable); //停止Timer
     }
@@ -339,26 +308,26 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
         @Override
         public boolean handleMessage(Message msg) {
             switch (msg.what) {
-                case HANDLER_DEVICE_CONNECTED:
-
-                    return false;
-                case HANDLER_SHOW_ERROR:
-
-                    return false;
                 // Sensors
                 case HANDLER_UPDATE_ACCELEROMETER_RESULT:
-                    Log.i("handleMessage", "HANDLER_UPDATE_ACCELEROMETER_RESULT -> (Data) msg.obj = " + (Acceleration) msg.obj);
-                    if (isSampling) {
+                    if (isSampling){
                         Acceleration data = ((Acceleration) msg.obj);
+                        accl_entry = String.format("%.6f", data.x()) + "," +
+                                String.format("%.6f", data.y())  + "," +
+                                String.format("%.6f", data.z()) ;
+                        accL.add(accl_entry);
                         newDeviceState.deviceAcceleration=data.toString();
                         connectedDevices.notifyDataSetChanged();
                     }
-
                     return false;
                 case HANDLER_UPDATE_GYRO_RESULT:
-                    Log.i("handleMessage", "HANDLER_UPDATE_GYRO_RESULT -> (AngularVelocity) msg.obj = " + (AngularVelocity) msg.obj);
-                    if (isSampling) {
+                    final double Deg2Rad = Math.PI / 180.0;
+                    if (isSampling){
                         AngularVelocity data = (AngularVelocity) msg.obj;
+                        angv_entry =   ","+String.format("%.6f", data.x() * Deg2Rad) + "," +
+                                String.format("%.6f", data.y() * Deg2Rad) + "," +
+                                String.format("%.6f", data.z() * Deg2Rad);
+                        angvL.add(angv_entry);
                         newDeviceState.deviceGYRO = data.toString();
                         connectedDevices.notifyDataSetChanged();
                     }
@@ -401,25 +370,42 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
                 Toast.makeText(getContext(), e.getMessage(), Toast.LENGTH_LONG).show();
             }
         }
-        handleStartSampling();
+    }
+    //
+    public void data2file(){
+        createSysDir();
+        Log.e("Kenny",String.valueOf(angvL.size()));
+
+        if (na!=null){
+            OutputStream out;
+            for (int i=0; i<angvL.size(); i++){
+                try {
+                    out = new BufferedOutputStream(new FileOutputStream(na, true));
+                    out.write(accL.get(i).getBytes());
+                    out.write(angvL.get(i).getBytes());
+                    out.write(angL.get(i).getBytes());
+                    out.write("\n".getBytes());
+                    out.close();
+                } catch (Exception e) {
+                    Log.e("r", "CSV creation error", e);
+                }
+            }
+        }
     }
     //檔案寫入DB
     public void f2d() {
+        //--------------------------------------------------------------------------------------------------------------------------------------------------------
         //  sdb = dbhelper.getWritableDatabase();
-
         //   dbhelper.openDatabase();
         sdb = dbhelper.getWritableDatabase();
 
         sdb.delete("jy61_record",null,null);
         try {
-
             InputStreamReader isr = new InputStreamReader(new FileInputStream(na));//檔案讀取路徑
             BufferedReader reader = new BufferedReader(isr);
             String line = null;
-
             String rectime=na.substring(na.lastIndexOf("/"));
 
-            int i = 0;
             if (sdb != null) {
                 if (sdb.isOpen()) {
                     while ((line = reader.readLine()) != null) {
@@ -453,7 +439,6 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
                             sdb.endTransaction();
                         }
                     }
-
                 }
             }
             sdb.close();  //可自行變化成存入陣列或arrayList方便之後存取

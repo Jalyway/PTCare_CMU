@@ -5,12 +5,8 @@ package com.example.ptcare_cmu;
  */
 
 import android.app.ActivityManager;
-import android.app.DownloadManager;
-import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -18,11 +14,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
-
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
-
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -31,7 +22,6 @@ import java.util.List;
 import FISmain.FISMotionSample;
 
 public class MainActivity extends AppCompatActivity {
-    DownloadManager downloadManager;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
