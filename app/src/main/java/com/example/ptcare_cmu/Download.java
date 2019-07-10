@@ -193,12 +193,12 @@ public class Download extends MainActivity {
                     }
                     //-------------------------------------------------------------------------
                     FISMotionSample fisMotionSample=new FISMotionSample();
-                    List<String> result=fisMotionSample.Recognition("/data/data/com.example.ptcare_cmu/T01_flex_ext.fis",
+                    List<Double> result=fisMotionSample.Recognition("/data/data/com.example.ptcare_cmu/T01_flex_ext.fis",
                             "/storage/emulated/0/Android/data/com.example.ptcare_cmu/files/"+fileName.getText(),///data/data/com.example.ptcare_cmu/ExtFlexMotionTest.csv
                             "/data/data/com.example.ptcare_cmu/motionGuide1.txt",
                             "/data/data/com.example.ptcare_cmu/motionCriteria1.txt");
                     for(int i=0; i<result.size(); i++) {
-                        Log.e("Kenny", result.get(i));
+                        Log.e("Kenny", String.valueOf(result.get(i)));
                         str += result.get(i)+"\n";
                     }
 
