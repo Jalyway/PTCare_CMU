@@ -51,70 +51,10 @@ public class LineChartActivity extends AppCompatActivity {
         cartesian.xAxis(0).labels().padding(5d, 5d, 5d, 5d);
 
         List<DataEntry> seriesData = new ArrayList<>();
-/*
-        for(int i=0;i<Download.result.size();i++)
-            seriesData.add(new CustomDataEntry(""+(i+1), Integer.parseInt(Download.result.get(i)), 0, 0));
-            */
 
-        seriesData.add(new CustomDataEntry("1", 0, 0, 0));
-        seriesData.add(new CustomDataEntry("2", 0, 0, 0));
-        seriesData.add(new CustomDataEntry("3", 0, 0, 0));
-        seriesData.add(new CustomDataEntry("4", 1, 0, 0));
-        seriesData.add(new CustomDataEntry("5", 1, 0, 0));
-        seriesData.add(new CustomDataEntry("6", 1, 0, 0));
-        seriesData.add(new CustomDataEntry("7", 2, 0, 0));
-        seriesData.add(new CustomDataEntry("8", 2, 0, 0));
-        seriesData.add(new CustomDataEntry("9", 2, 0, 0));
-        seriesData.add(new CustomDataEntry("10", 3, 0, 0));
-        seriesData.add(new CustomDataEntry("11", 3, 0, 0));
-        seriesData.add(new CustomDataEntry("12", 3, 0, 0));
-        seriesData.add(new CustomDataEntry("13", 0, 0, 0));
-        seriesData.add(new CustomDataEntry("14", 0, 0, 0));
-        seriesData.add(new CustomDataEntry("15", 0, 0, 0));
-        seriesData.add(new CustomDataEntry("16", 1, 0, 0));
-        seriesData.add(new CustomDataEntry("17", 1, 0, 0));
-        seriesData.add(new CustomDataEntry("18", 1, 0, 0));
-        seriesData.add(new CustomDataEntry("19", 2, 0, 0));
-        seriesData.add(new CustomDataEntry("20", 2, 0, 0));
-        seriesData.add(new CustomDataEntry("21", 2, 0, 0));
-        seriesData.add(new CustomDataEntry("22", 3, 0, 0));
-        seriesData.add(new CustomDataEntry("23", 3, 0, 0));
-        seriesData.add(new CustomDataEntry("24", 3, 0, 0));
-        seriesData.add(new CustomDataEntry("25", 0, 0, 0));
-        seriesData.add(new CustomDataEntry("26", 0, 0, 0));
-        seriesData.add(new CustomDataEntry("27", 0, 0, 0));
-        seriesData.add(new CustomDataEntry("28", 1, 0, 0));
-        seriesData.add(new CustomDataEntry("29", 1, 0, 0));
-        seriesData.add(new CustomDataEntry("30", 1, 0, 0));
-        seriesData.add(new CustomDataEntry("31", 2, 0, 0));
-        seriesData.add(new CustomDataEntry("32", 2, 0, 0));
-        seriesData.add(new CustomDataEntry("33", 2, 0, 0));
-        seriesData.add(new CustomDataEntry("34", 3, 0, 0));
-        seriesData.add(new CustomDataEntry("35", 3, 0, 0));
-        seriesData.add(new CustomDataEntry("36", 3, 0, 0));
-        seriesData.add(new CustomDataEntry("37", 0, 0, 0));
-        seriesData.add(new CustomDataEntry("38", 0, 0, 0));
-        seriesData.add(new CustomDataEntry("39", 0, 0, 0));
-        seriesData.add(new CustomDataEntry("40", 1, 0, 0));
-        seriesData.add(new CustomDataEntry("41", 1, 0, 0));
-        seriesData.add(new CustomDataEntry("42", 1, 0, 0));
-        seriesData.add(new CustomDataEntry("43", 2, 0, 0));
-        seriesData.add(new CustomDataEntry("44", 2, 0, 0));
-        seriesData.add(new CustomDataEntry("45", 2, 0, 0));
-        seriesData.add(new CustomDataEntry("46", 3, 0, 0));
-        seriesData.add(new CustomDataEntry("47", 3, 0, 0));
-        seriesData.add(new CustomDataEntry("48", 3, 0, 0));
-        seriesData.add(new CustomDataEntry("49", 0, 0, 0));
-        seriesData.add(new CustomDataEntry("50", 0, 0, 0));
-        seriesData.add(new CustomDataEntry("51", 0, 0, 0));
-        seriesData.add(new CustomDataEntry("52", 1, 0, 0));
-        seriesData.add(new CustomDataEntry("53", 1, 0, 0));
-        seriesData.add(new CustomDataEntry("54", 1, 0, 0));
-        seriesData.add(new CustomDataEntry("56", 2, 0, 0));
-        seriesData.add(new CustomDataEntry("57", 2, 0, 0));
-        seriesData.add(new CustomDataEntry("58", 3, 0, 0));
-        seriesData.add(new CustomDataEntry("59", 3, 0, 0));
-        seriesData.add(new CustomDataEntry("60", 3, 0, 0));
+        for(int i=0;i<Download.result.size();i++)
+            seriesData.add(new CustomDataEntry(""+(i+1), Download.result.get(i), 0, 0));
+
 
         Set set = Set.instantiate();
         set.data(seriesData);

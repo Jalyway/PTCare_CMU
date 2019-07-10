@@ -38,7 +38,7 @@ import java.util.List;
 import FISmain.FISMotionSample;
 
 public class Download extends MainActivity {
-    public static List<String> result;
+    public static List<Double> result;
     private static final int PICK_FILE_REQUEST = 1;
     private String selectedFilePath;
     private EditText userName;
@@ -197,7 +197,7 @@ public class Download extends MainActivity {
                     }
                     //-------------------------------------------------------------------------
                     FISMotionSample fisMotionSample=new FISMotionSample();
-                    List<Double> result=fisMotionSample.Recognition("/data/data/com.example.ptcare_cmu/T01_flex_ext.fis",
+                    result=fisMotionSample.Recognition("/data/data/com.example.ptcare_cmu/T01_flex_ext.fis",
                             "/storage/emulated/0/Android/data/com.example.ptcare_cmu/files/"+fileName.getText(),///data/data/com.example.ptcare_cmu/ExtFlexMotionTest.csv
                             "/data/data/com.example.ptcare_cmu/motionGuide1.txt",
                             "/data/data/com.example.ptcare_cmu/motionCriteria1.txt");
