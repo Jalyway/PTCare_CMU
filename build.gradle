@@ -22,7 +22,9 @@ allprojects {
             url "https://mbientlab.com/releases/ivyrep"
             layout "gradle"
         }
+        maven { url 'https://jitpack.io' }
     }
+
 }
 
 task clean(type: Delete) {
