@@ -33,15 +33,18 @@ package com.example.ptcare_cmu;
 
 import android.bluetooth.BluetoothDevice;
 
+import java.io.Serializable;
+
 /**
  * Created by etsai on 5/22/2016.
  */
-class DeviceState {
+class DeviceState implements Serializable {
     final BluetoothDevice btDevice;
     String deviceAngle;
     String deviceAcceleration;
     String deviceGYRO;
     String deviceTime;
+    int deviceNum;
     boolean pressed, connecting;
 
     DeviceState(BluetoothDevice btDevice) {
@@ -50,6 +53,7 @@ class DeviceState {
         this.deviceAcceleration= null;
         this.deviceGYRO= null;
         this.deviceTime= null;
+        this.deviceNum=0;
         pressed= false;
     }
 

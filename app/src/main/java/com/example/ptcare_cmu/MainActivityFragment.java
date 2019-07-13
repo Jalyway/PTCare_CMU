@@ -33,7 +33,6 @@
 package com.example.ptcare_cmu;
 
 import android.app.Activity;
-import android.app.Dialog;
 import android.bluetooth.BluetoothDevice;
 import android.content.ComponentName;
 import android.content.Context;
@@ -81,7 +80,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 
 import bolts.Continuation;
 import bolts.Task;
@@ -92,21 +90,21 @@ import bolts.Task;
 public class MainActivityFragment extends Fragment implements ServiceConnection {
     private final HashMap<DeviceState, MetaWearBoard> stateToBoards;
     private BtleService.LocalBinder binder;
-    private GyroBmi160 gyroBmi160;
-    private Accelerometer accelerometer;
     public Handler mHandler;
-    private DeviceState newDeviceState;
     public int tsec=0;
+    private int deviceConnectNum=0;
     private boolean isSampling=false;
     private String na=null;
     private String convert_FilePath=null;
     private Boolean isSDPresent = false;
     private DBHelper dbhelper = null;
     private SQLiteDatabase sdb;
-    private String mwMacAddress;
-    private List<String> accL=new ArrayList<>();
-    private List<String> angvL=new ArrayList<>();
-    private List<String> angL=new ArrayList<>();
+    private String mwMacAddress,angle;
+    private List<String[]> metaWearDataBase = new ArrayList<>();
+    private List<GyroBmi160> gyroBmi160=new ArrayList<>();
+    private List<Accelerometer> accelerometer=new ArrayList<>();
+    private List<DeviceState> newDeviceStateList=new ArrayList<>();
+    private String[] metaWearData=new String[3];
 
     String accl_entry;
     String angv_entry;
@@ -143,52 +141,36 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
 
 
     public void addNewDevice(BluetoothDevice btDevice) {
-        newDeviceState= new DeviceState(btDevice);
+        final DeviceState newDeviceState= new DeviceState(btDevice);
         final MetaWearBoard newBoard= binder.getMetaWearBoard(btDevice);
 
         mwMacAddress = btDevice.getAddress();
         newDeviceState.connecting= true;
+        newDeviceState.deviceNum=deviceConnectNum;
         connectedDevices.add(newDeviceState);
         stateToBoards.put(newDeviceState, newBoard);
-
-        newBoard.onUnexpectedDisconnect(status -> getActivity().runOnUiThread(() -> connectedDevices.remove(newDeviceState)));
+        this.deviceConnectNum++;
+        newBoard.onUnexpectedDisconnect(status -> getActivity().runOnUiThread(() -> {
+            connectedDevices.remove(newDeviceState);
+            this.deviceConnectNum--;
+        }));
         //--------------------------------------------------------------------------------------------------------------------------------
         newBoard.connectAsync().onSuccessTask((Continuation<Void, Task<Route>>) task -> {
             MainActivityFragment.this.getActivity().runOnUiThread(() -> {
             newDeviceState.connecting = false;
             connectedDevices.notifyDataSetChanged();
             });
-            accelerometer = newBoard.getModule(Accelerometer.class);
-            accelerometer.acceleration().stop();
-            accelerometer.stop();
-            if (accelerometer != null) {
-                accelerometer.configure()
-                        .odr(100f)       // Set sampling frequency to 25Hz, or closest valid ODR
-                        .range(4f)      // Set data range to +/-4g, or closet valid range
-                        .commit();
-                accelerometer.acceleration().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
-                    CalculateAngle(data.value(Acceleration.class));
-                    //------------------------------------------------------------------------------------------------------------------------------------
-                    mHandler.obtainMessage(HANDLER_UPDATE_ACCELEROMETER_RESULT, data.value(Acceleration.class)).sendToTarget();
-                }));
-            }
-            // Setup Gyro
-            gyroBmi160 = newBoard.getModule(GyroBmi160.class);
-            gyroBmi160.angularVelocity().stop();
-            gyroBmi160.stop();
 
-            if (gyroBmi160 != null) {
-//                    listSensors.add("Gyro");
-                // set the data rat to 50Hz and the
-                // data range to +/- 2000 degrees/s
-                gyroBmi160.configure()
-                        .odr(GyroBmi160.OutputDataRate.ODR_100_HZ)
-                        .range(GyroBmi160.Range.FSR_2000)
-                        .commit();
-                gyroBmi160.angularVelocity().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
-                    mHandler.obtainMessage(HANDLER_UPDATE_GYRO_RESULT, data.value(AngularVelocity.class)).sendToTarget();
-                }));
-            }
+            newDeviceStateList.add(newDeviceState);
+            accelerometer.add(newBoard.getModule(Accelerometer.class));
+            Log.e("Kenny","accelerometer++");
+            gyroBmi160.add(newBoard.getModule(GyroBmi160.class));
+            Log.e("Kenny","gyroBmi160++");
+
+            int deviceNum=newDeviceStateList.size()-1;
+
+            metaWearSensor(accelerometer.get(deviceNum),gyroBmi160.get(deviceNum),newDeviceStateList.get(deviceNum));
+
             return null;
         }).onSuccessTask(task -> newBoard.getModule(Switch.class).state().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
             getActivity().runOnUiThread(() -> {
@@ -199,11 +181,13 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
             if (task.isFaulted()) {
                 if (!newBoard.isConnected()) {
                     getActivity().runOnUiThread(() -> connectedDevices.remove(newDeviceState));
+                    this.deviceConnectNum--;
                 } else {
                     Snackbar.make(getActivity().findViewById(R.id.activity_main_layout), task.getError().getLocalizedMessage(), Snackbar.LENGTH_SHORT).show();
                     newBoard.tearDown();
                     newBoard.disconnectAsync().continueWith((Continuation<Void, Void>) task1 -> {
                         connectedDevices.remove(newDeviceState);
+                        this.deviceConnectNum--;
                         return null;
                     });
                 }
@@ -230,6 +214,9 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
 
             Accelerometer accelerometer = selectedBoard.getModule(Accelerometer.class);
             accelerometer.stop();
+            GyroBmi160 gyroBmi160=selectedBoard.getModule(GyroBmi160.class);
+            gyroBmi160.stop();
+
             selectedBoard.tearDown();
             selectedBoard.getModule(Debug.class).disconnectAsync();
 
@@ -248,7 +235,7 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
 
     }
     //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    private void CalculateAngle(Acceleration AccelerationData)
+    private void CalculateAngle(Acceleration AccelerationData,DeviceState newDeviceState)
     {
         double Denominator = Math.sqrt(Math.pow(AccelerationData.x(), 2) + Math.pow(AccelerationData.y(), 2) + Math.pow(AccelerationData.z(), 2));
 
@@ -259,9 +246,9 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
                 "y:\t" + String.format("%.3f", AngleY) + "g, " +
                 "z:\t" + String.format("%.3f", AngleZ) + "g)";
         newDeviceState.deviceAngle = ans;
-        ang_entry=","+AngleX+","+AngleY+","+AngleZ;
+        ang_entry=","+AngleX+","+AngleY+","+AngleZ+"ang";
         if (isSampling){
-            angL.add(ang_entry);
+            metaWearData[2]=ang_entry;
         }
     }
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////-----------------------CalculateAngle
@@ -273,22 +260,26 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void handleStartSampling() {
         isSampling = true;
-        accelerometer.acceleration().start();
-        accelerometer.start();
+        for (int i=0; i< accelerometer.size();i++){
+            accelerometer.get(i).acceleration().start();
+            accelerometer.get(i).start();
 
-        gyroBmi160.angularVelocity().start();
-        gyroBmi160.start();
+            gyroBmi160.get(i).angularVelocity().start();
+            gyroBmi160.get(i).start();
+        }
 
         tsec=0;
         mHandler.postDelayed(runnable,1000); // 開始Timer
     }
 
     public void handleStopSampling() {
-        accelerometer.acceleration().stop();
-        accelerometer.stop();
+        for (int i=0; i< accelerometer.size();i++){
+            accelerometer.get(i).acceleration().stop();
+            accelerometer.get(i).stop();
 
-        gyroBmi160.angularVelocity().stop();
-        gyroBmi160.stop();
+            gyroBmi160.get(i).angularVelocity().stop();
+            gyroBmi160.get(i).stop();
+        }
         isSampling = false;
 
         mHandler.removeCallbacks(runnable); //停止Timer
@@ -298,8 +289,10 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
             //	update( );
             tsec++;
             mHandler.postDelayed(this,1000);
+            for (int i=0; i< accelerometer.size();i++){
+                newDeviceStateList.get(i).deviceTime=Integer.toString(tsec);
+            }
 
-            newDeviceState.deviceTime=Integer.toString(tsec);
 
         }
     };
@@ -310,27 +303,10 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
             switch (msg.what) {
                 // Sensors
                 case HANDLER_UPDATE_ACCELEROMETER_RESULT:
-                    if (isSampling){
-                        Acceleration data = ((Acceleration) msg.obj);
-                        accl_entry = String.format("%.6f", data.x()) + "," +
-                                String.format("%.6f", data.y())  + "," +
-                                String.format("%.6f", data.z()) ;
-                        accL.add(accl_entry);
-                        newDeviceState.deviceAcceleration=data.toString();
-                        connectedDevices.notifyDataSetChanged();
-                    }
+                    connectedDevices.notifyDataSetChanged();
                     return false;
                 case HANDLER_UPDATE_GYRO_RESULT:
-                    final double Deg2Rad = Math.PI / 180.0;
-                    if (isSampling){
-                        AngularVelocity data = (AngularVelocity) msg.obj;
-                        angv_entry =   ","+String.format("%.6f", data.x() * Deg2Rad) + "," +
-                                String.format("%.6f", data.y() * Deg2Rad) + "," +
-                                String.format("%.6f", data.z() * Deg2Rad);
-                        angvL.add(angv_entry);
-                        newDeviceState.deviceGYRO = data.toString();
-                        connectedDevices.notifyDataSetChanged();
-                    }
+                    connectedDevices.notifyDataSetChanged();
                     return false;
             }
             return false;
@@ -374,23 +350,25 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     //
     public void data2file(){
         createSysDir();
-        Log.e("Kenny",String.valueOf(angvL.size()));
-
-        if (na!=null){
-            OutputStream out;
-            for (int i=0; i<angvL.size(); i++){
-                try {
-                    out = new BufferedOutputStream(new FileOutputStream(na, true));
-                    out.write(accL.get(i).getBytes());
-                    out.write(angvL.get(i).getBytes());
-                    out.write(angL.get(i).getBytes());
-                    out.write("\n".getBytes());
-                    out.close();
-                } catch (Exception e) {
-                    Log.e("r", "CSV creation error", e);
-                }
-            }
-        }
+//        Log.e("Kenny",String.valueOf(angvL.size()));
+//
+//        if (na!=null){
+//            OutputStream out;
+//            for (int i=0; i<angvL.size(); i++){
+//                for (int j=0; j<angvL.get(i).size(); j++){
+//                    try {
+//                        out = new BufferedOutputStream(new FileOutputStream(na, true));
+//                        out.write(accL.get(i).get(j).getBytes());
+//                        out.write(angvL.get(i).get(j).getBytes());
+//                        out.write(angL.get(i).get(j).getBytes());
+//                        out.write("\n".getBytes());
+//                        out.close();
+//                    } catch (Exception e) {
+//                        Log.e("r", "CSV creation error", e);
+//                    }
+//                }
+//            }
+//        }
     }
     //檔案寫入DB
     public void f2d() {
@@ -453,4 +431,51 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
         dataTransfer.calMotion(convert_FilePath,getContext());
     }
 
+    //
+    private void metaWearSensor(Accelerometer accelerometer, GyroBmi160 gyroBmi160,DeviceState newDeviceState){
+        accelerometer.acceleration().stop();
+        accelerometer.stop();
+
+        if (accelerometer != null) {
+            accelerometer.configure()
+                    .odr(100f)       // Set sampling frequency to 25Hz, or closest valid ODR
+                    .range(4f)      // Set data range to +/-4g, or closet valid range
+                    .commit();
+            accelerometer.acceleration().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
+                CalculateAngle(data.value(Acceleration.class),newDeviceState);
+                newDeviceState.deviceAcceleration=data.value(Acceleration.class).toString();
+                accl_entry = String.format("%.6f", data.value(Acceleration.class).x()) + "," +
+                        String.format("%.6f", data.value(Acceleration.class).y())  + "," +
+                        String.format("%.6f", data.value(Acceleration.class).z()) +"acc";
+                metaWearData[0]=accl_entry;
+                //------------------------------------------------------------------------------------------------------------------------------------
+                mHandler.obtainMessage(HANDLER_UPDATE_ACCELEROMETER_RESULT, data.value(Acceleration.class)).sendToTarget();
+            }));
+        }
+        // Setup Gyro
+        gyroBmi160.angularVelocity().stop();
+        gyroBmi160.stop();
+
+        if (gyroBmi160 != null) {
+//                    listSensors.add("Gyro");
+            // set the data rat to 50Hz and the
+            // data range to +/- 2000 degrees/s
+            gyroBmi160.configure()
+                    .odr(GyroBmi160.OutputDataRate.ODR_100_HZ)
+                    .range(GyroBmi160.Range.FSR_2000)
+                    .commit();
+            gyroBmi160.angularVelocity().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
+                newDeviceState.deviceGYRO = data.value(AngularVelocity.class).toString();
+                final double Deg2Rad = Math.PI / 180.0;
+                angv_entry =   ","+String.format("%.6f", data.value(AngularVelocity.class).x() * Deg2Rad) + "," +
+                        String.format("%.6f", data.value(AngularVelocity.class).y() * Deg2Rad) + "," +
+                        String.format("%.6f", data.value(AngularVelocity.class).z() * Deg2Rad)+"angv";
+                metaWearData[1]=angv_entry;
+                metaWearDataBase.add(metaWearData);
+                Log.e("MetaWear",metaWearDataBase.get(metaWearDataBase.size()-1)[0]+metaWearDataBase.get(metaWearDataBase.size()-1)[1]+metaWearDataBase.get(metaWearDataBase.size()-1)[2]);
+
+                mHandler.obtainMessage(HANDLER_UPDATE_GYRO_RESULT, data.value(AngularVelocity.class)).sendToTarget();
+            }));
+        }
+    }
 }

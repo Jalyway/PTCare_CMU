@@ -193,9 +193,8 @@ public class DataBleMonitor extends AppCompatActivity {
     class LoadThread extends Thread {
         public void run(){
             ((MainActivityFragment) fragment).handleStopSampling();
-            ((MainActivityFragment) fragment).data2file();
-            ((MainActivityFragment) fragment).f2d();
-            ((MainActivityFragment) fragment).db2CSV();
+//            ((MainActivityFragment) fragment).data2file();
+//            ((MainActivityFragment) fragment).f2d();
             progressLoad_dialog.dismiss();
             finish();
             startActivity(new Intent(getApplicationContext(), Download.class));
