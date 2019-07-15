@@ -94,17 +94,18 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     public int tsec=0;
     private int deviceConnectNum=0;
     private boolean isSampling=false;
-    private String na=null;
-    private String convert_FilePath=null;
+    private String[] na=null;
+    private String[] convert_FilePath=null;
+    String[] metaWearData=new String[3];
     private Boolean isSDPresent = false;
     private DBHelper dbhelper = null;
     private SQLiteDatabase sdb;
     private String mwMacAddress,angle;
-    private List<String[]> metaWearDataBase = new ArrayList<>();
     private List<GyroBmi160> gyroBmi160=new ArrayList<>();
     private List<Accelerometer> accelerometer=new ArrayList<>();
     private List<DeviceState> newDeviceStateList=new ArrayList<>();
-    private String[] metaWearData=new String[3];
+    private List<List<String[]>> metaWearDataBase = new ArrayList<>();
+
 
     String accl_entry;
     String angv_entry;
@@ -168,7 +169,8 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
             Log.e("Kenny","gyroBmi160++");
 
             int deviceNum=newDeviceStateList.size()-1;
-
+            List<String[]> metaWearDataflash = new ArrayList<>();
+            metaWearDataBase.add(metaWearDataflash);
             metaWearSensor(accelerometer.get(deviceNum),gyroBmi160.get(deviceNum),newDeviceStateList.get(deviceNum));
 
             return null;
@@ -235,7 +237,7 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
 
     }
     //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    private void CalculateAngle(Acceleration AccelerationData,DeviceState newDeviceState)
+    private void CalculateAngle(Acceleration AccelerationData,DeviceState newDeviceState,String[] metaWearData)
     {
         double Denominator = Math.sqrt(Math.pow(AccelerationData.x(), 2) + Math.pow(AccelerationData.y(), 2) + Math.pow(AccelerationData.z(), 2));
 
@@ -246,7 +248,7 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
                 "y:\t" + String.format("%.3f", AngleY) + "g, " +
                 "z:\t" + String.format("%.3f", AngleZ) + "g)";
         newDeviceState.deviceAngle = ans;
-        ang_entry=","+AngleX+","+AngleY+","+AngleZ+"ang";
+        ang_entry=","+AngleX+","+AngleY+","+AngleZ;
         if (isSampling){
             metaWearData[2]=ang_entry;
         }
@@ -316,8 +318,9 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     public void createSysDir()
     {
         File[] dirs = ContextCompat.getExternalFilesDirs(getContext(), null);
-        Log.e("Kenny", String.valueOf(dirs[0]));
         File removable = null;
+        na=new String[deviceConnectNum];
+        convert_FilePath=new String[deviceConnectNum];
 
         if (dirs.length > 0) {
             removable= dirs[0];
@@ -329,22 +332,24 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
             Date curDate = new Date(System.currentTimeMillis());//獲取當前時間
 
             String cur=formatter1.format(curDate);
-            Log.e("Kenny", removable.toString());
-            File test = new File(removable,cur.trim()+".txt");
-            File convertFile = new File(removable,cur.trim()+".csv");
-            try {
-                test.createNewFile(); // Throws the exception mentioned above
-                convertFile.createNewFile();
-                //test.mkdir();
-                na=test.getParent()+"/"+cur.trim()+".txt";
-                convert_FilePath=convertFile.getParent()+"/"+cur.trim()+".csv";
+            for (int i=0; i<deviceConnectNum;i++){
+                File test = new File(removable,cur.trim()+"_"+i+".txt");
+                File convertFile = new File(removable,cur.trim()+"_"+i+".csv");
+                try {
+                    test.createNewFile(); // Throws the exception mentioned above
+                    convertFile.createNewFile();
+                    //test.mkdir();
+                    na[i]=test.getParent()+"/"+cur.trim()+"_"+i+".txt";
+                    convert_FilePath[i]=convertFile.getParent()+"/"+cur.trim()+"_"+i+".csv";
 
-                isSDPresent=true;
+                    isSDPresent=true;
+                }
+                catch (Exception e) {
+                    Log.e(getClass().getSimpleName(), "Exception creating file", e);
+                    Toast.makeText(getContext(), e.getMessage(), Toast.LENGTH_LONG).show();
+                }
             }
-            catch (Exception e) {
-                Log.e(getClass().getSimpleName(), "Exception creating file", e);
-                Toast.makeText(getContext(), e.getMessage(), Toast.LENGTH_LONG).show();
-            }
+
         }
     }
     //
@@ -352,83 +357,90 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
         createSysDir();
 //        Log.e("Kenny",String.valueOf(angvL.size()));
 //
-//        if (na!=null){
-//            OutputStream out;
-//            for (int i=0; i<angvL.size(); i++){
-//                for (int j=0; j<angvL.get(i).size(); j++){
-//                    try {
-//                        out = new BufferedOutputStream(new FileOutputStream(na, true));
-//                        out.write(accL.get(i).get(j).getBytes());
-//                        out.write(angvL.get(i).get(j).getBytes());
-//                        out.write(angL.get(i).get(j).getBytes());
-//                        out.write("\n".getBytes());
-//                        out.close();
-//                    } catch (Exception e) {
-//                        Log.e("r", "CSV creation error", e);
-//                    }
-//                }
-//            }
-//        }
+        for (int i=0;i<na.length;i++){
+            Log.e("r", na[i]);
+            if (na[i]!=null){
+                OutputStream out;
+                Log.e("metaWear "+i, String.valueOf(metaWearDataBase.get(i).size()));
+                for (int j=0; j<metaWearDataBase.get(i).size(); j++){
+                    try {
+                        out = new BufferedOutputStream(new FileOutputStream(na[i], true));
+                        if (metaWearDataBase.get(i).get(j)[0]!=null&&metaWearDataBase.get(i).get(j)[1]!=null&&metaWearDataBase.get(i).get(j)[2]!=null){
+                            out.write(metaWearDataBase.get(i).get(j)[0].getBytes());
+                            out.write(metaWearDataBase.get(i).get(j)[1].getBytes());
+                            out.write(metaWearDataBase.get(i).get(j)[2].getBytes());
+                            out.write("\n".getBytes());
+                        }
+                        out.close();
+                    } catch (Exception e) {
+                        Log.e("r", "CSV creation error", e);
+                    }
+                }
+            }
+        }
     }
     //檔案寫入DB
     public void f2d() {
         //--------------------------------------------------------------------------------------------------------------------------------------------------------
         //  sdb = dbhelper.getWritableDatabase();
         //   dbhelper.openDatabase();
-        sdb = dbhelper.getWritableDatabase();
+        for (int i=0;i<na.length;i++) {
+            sdb = dbhelper.getWritableDatabase();
 
-        sdb.delete("jy61_record",null,null);
-        try {
-            InputStreamReader isr = new InputStreamReader(new FileInputStream(na));//檔案讀取路徑
-            BufferedReader reader = new BufferedReader(isr);
-            String line = null;
-            String rectime=na.substring(na.lastIndexOf("/"));
+            sdb.delete("jy61_record",null,null);
+            try {
+                InputStreamReader isr = new InputStreamReader(new FileInputStream(na[i]));//檔案讀取路徑
+                BufferedReader reader = new BufferedReader(isr);
+                String line = null;
+                String rectime=na[i].substring(na[i].lastIndexOf("/"));
 
-            if (sdb != null) {
-                if (sdb.isOpen()) {
-                    while ((line = reader.readLine()) != null) {
-                        String item[] = line.split(",");
-                        //  Log.d("length: ",String.valueOf(item.length));
+                if (sdb != null) {
+                    if (sdb.isOpen()) {
+                        while ((line = reader.readLine()) != null) {
+                            String item[] = line.split(",");
+                            //  Log.d("length: ",String.valueOf(item.length));
 
-                        String sql = "insert into jy61_record (device_name,start_time,accx,accy,accz,angvx,angvy,angvz,angx,angy,angz ) " +
-                                "values (?, ?, ?, ?,?, ?, ?, ?,?, ?, ?);";
-                        if(item.length==9){
+                            String sql = "insert into jy61_record (device_name,start_time,accx,accy,accz,angvx,angvy,angvz,angx,angy,angz ) " +
+                                    "values (?, ?, ?, ?,?, ?, ?, ?,?, ?, ?);";
+                            if(item.length==9){
 
-                            sdb.beginTransaction();
-                            SQLiteStatement stmt = sdb.compileStatement(sql);
+                                sdb.beginTransaction();
+                                SQLiteStatement stmt = sdb.compileStatement(sql);
 
-                            //  for (int i = 0; i < insert_db; i++) {
-                            stmt.bindString(1, mwMacAddress);
-                            stmt.bindString(2, rectime.substring(1));
-                            stmt.bindString(3, item[0].trim());
-                            stmt.bindString(4, item[1].trim());
-                            stmt.bindString(5, item[2].trim());
-                            stmt.bindString(6, item[3].trim());
-                            stmt.bindString(7, item[4].trim());
-                            stmt.bindString(8, item[5].trim());
-                            stmt.bindString(9, item[6].trim());
-                            stmt.bindString(10, item[7].trim());
-                            stmt.bindString(11, item[8].trim());
+                                //  for (int i = 0; i < insert_db; i++) {
+                                stmt.bindString(1, mwMacAddress);
+                                stmt.bindString(2, rectime.substring(1));
+                                stmt.bindString(3, item[0].trim());
+                                stmt.bindString(4, item[1].trim());
+                                stmt.bindString(5, item[2].trim());
+                                stmt.bindString(6, item[3].trim());
+                                stmt.bindString(7, item[4].trim());
+                                stmt.bindString(8, item[5].trim());
+                                stmt.bindString(9, item[6].trim());
+                                stmt.bindString(10, item[7].trim());
+                                stmt.bindString(11, item[8].trim());
 
-                            long entryID = stmt.executeInsert();
+                                long entryID = stmt.executeInsert();
 
-                            stmt.clearBindings();
-                            sdb.setTransactionSuccessful();
-                            sdb.endTransaction();
+                                stmt.clearBindings();
+                                sdb.setTransactionSuccessful();
+                                sdb.endTransaction();
+                            }
                         }
                     }
                 }
+                sdb.close();  //可自行變化成存入陣列或arrayList方便之後存取
+            } catch(IOException e) {
+                e.printStackTrace();
             }
-            sdb.close();  //可自行變化成存入陣列或arrayList方便之後存取
-        } catch(IOException e) {
-            e.printStackTrace();
+            db2CSV(i);
         }
     }
 
-    //檔案輸出成csv
-    public void db2CSV(){
+//    檔案輸出成csv
+    public void db2CSV(int i){
         DataTransfer dataTransfer=new DataTransfer();
-        dataTransfer.calMotion(convert_FilePath,getContext());
+        dataTransfer.calMotion(convert_FilePath[i],getContext());
     }
 
     //
@@ -442,11 +454,12 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
                     .range(4f)      // Set data range to +/-4g, or closet valid range
                     .commit();
             accelerometer.acceleration().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
-                CalculateAngle(data.value(Acceleration.class),newDeviceState);
+                metaWearData=new String[3];
+                CalculateAngle(data.value(Acceleration.class),newDeviceState,metaWearData);
                 newDeviceState.deviceAcceleration=data.value(Acceleration.class).toString();
                 accl_entry = String.format("%.6f", data.value(Acceleration.class).x()) + "," +
                         String.format("%.6f", data.value(Acceleration.class).y())  + "," +
-                        String.format("%.6f", data.value(Acceleration.class).z()) +"acc";
+                        String.format("%.6f", data.value(Acceleration.class).z()) ;
                 metaWearData[0]=accl_entry;
                 //------------------------------------------------------------------------------------------------------------------------------------
                 mHandler.obtainMessage(HANDLER_UPDATE_ACCELEROMETER_RESULT, data.value(Acceleration.class)).sendToTarget();
@@ -469,10 +482,10 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
                 final double Deg2Rad = Math.PI / 180.0;
                 angv_entry =   ","+String.format("%.6f", data.value(AngularVelocity.class).x() * Deg2Rad) + "," +
                         String.format("%.6f", data.value(AngularVelocity.class).y() * Deg2Rad) + "," +
-                        String.format("%.6f", data.value(AngularVelocity.class).z() * Deg2Rad)+"angv";
+                        String.format("%.6f", data.value(AngularVelocity.class).z() * Deg2Rad);
                 metaWearData[1]=angv_entry;
-                metaWearDataBase.add(metaWearData);
-                Log.e("MetaWear",metaWearDataBase.get(metaWearDataBase.size()-1)[0]+metaWearDataBase.get(metaWearDataBase.size()-1)[1]+metaWearDataBase.get(metaWearDataBase.size()-1)[2]);
+                metaWearDataBase.get(newDeviceState.deviceNum).add(metaWearData);
+                Log.e("MetaWear"+newDeviceState.deviceNum,metaWearDataBase.get(newDeviceState.deviceNum).get(metaWearDataBase.get(newDeviceState.deviceNum).size()-1)[0]+metaWearDataBase.get(newDeviceState.deviceNum).get(metaWearDataBase.get(newDeviceState.deviceNum).size()-1)[1]+metaWearDataBase.get(newDeviceState.deviceNum).get(metaWearDataBase.get(newDeviceState.deviceNum).size()-1)[2]);
 
                 mHandler.obtainMessage(HANDLER_UPDATE_GYRO_RESULT, data.value(AngularVelocity.class)).sendToTarget();
             }));
