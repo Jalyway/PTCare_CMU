@@ -9,9 +9,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.os.PowerManager;
+import android.provider.Settings;
 import android.support.annotation.Nullable;
-import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -92,7 +91,7 @@ public class Download extends MainActivity {
             //we are not connected to the network
             connected = false;
             Toast.makeText(this,"請開啟網路連線",Toast.LENGTH_LONG).show();
-            finish();
+            startActivity(new Intent(Settings.ACTION_WIFI_SETTINGS));
         }
 
         //Toast.makeText(this,"Main Thread: "+Thread.currentThread().getName(),Toast.LENGTH_SHORT).show();
