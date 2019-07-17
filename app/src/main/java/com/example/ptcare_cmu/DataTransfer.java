@@ -127,7 +127,6 @@ public class DataTransfer {
                           List motCode) {
 
         int n = motCode.size();//最大資料筆數, 相對加速度...等, 加速度與角速度變異差是Hz值而定會是 n/hz
-        Log.e("size", String.valueOf(n));
         int L = n / hz;
         try {
             //---------------------------------------------------------------------------------------------------------
@@ -202,12 +201,10 @@ public class DataTransfer {
                     out.write(String.valueOf(angLVar[i][2]).getBytes());
                     out.write("\n".getBytes());
                     out.close();
-                    Log.e("FFFFF", String.valueOf(i));
                 } catch (Exception e) {
                     Log.e("r", "CSV creation error", e);
                 }
             }
-            Log.e("r", "insert finish");
         } catch (Exception e) {
             e.printStackTrace();
         }

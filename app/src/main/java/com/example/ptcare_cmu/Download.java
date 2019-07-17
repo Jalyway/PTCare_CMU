@@ -38,7 +38,7 @@ import java.util.List;
 import FISmain.FISMotionSample;
 
 public class Download extends MainActivity {
-
+    public static List<Double> result;
     private static final int PICK_FILE_REQUEST = 1;
     private String selectedFilePath;
     private EditText userName;
@@ -118,6 +118,10 @@ public class Download extends MainActivity {
             if (message.what == 1) {
                 progressBar.setVisibility(View.GONE);
                 tvResult.setText(message.obj.toString());
+
+                //////////////////////////////////////////////////////////QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ
+                Intent intent = new Intent(getApplicationContext(), LineChartActivity.class);
+                startActivity(intent);
             }
             return false;
         }
@@ -137,13 +141,13 @@ public class Download extends MainActivity {
                 @Override
                 public void run() {
                     try {
-                        get = new HttpGet("http://140.128.65.114:8000/PRRFISHome/PTC/fis/motionCriteria1.txt");
+                        get = new HttpGet("http://140.128.65.114:8000/PRRFISHome/PTC/fis/T01_motionCriteria_FE.txt");
                         response = httpClient.execute(get);
                         resEntity = response.getEntity();
                         writer = EntityUtils.toString(resEntity);
 
                         try{
-                            FileWriter fw = new FileWriter("/data/data/com.example.ptcare_cmu/motionCriteria1.txt", false);
+                            FileWriter fw = new FileWriter("/data/data/com.example.ptcare_cmu/T01_motionCriteria_FE.txt", false);
                             BufferedWriter bw = new BufferedWriter(fw); //將BufferedWeiter與FileWrite物件做連結
                             bw.write(writer);
                             bw.newLine();
@@ -193,10 +197,10 @@ public class Download extends MainActivity {
                     }
                     //-------------------------------------------------------------------------
                     FISMotionSample fisMotionSample=new FISMotionSample();
-                    List<Double> result=fisMotionSample.Recognition("/data/data/com.example.ptcare_cmu/T01_flex_ext.fis",
+                    result=fisMotionSample.Recognition("/data/data/com.example.ptcare_cmu/T01_flex_ext.fis",
                             "/storage/emulated/0/Android/data/com.example.ptcare_cmu/files/"+fileName.getText(),///data/data/com.example.ptcare_cmu/ExtFlexMotionTest.csv
                             "/data/data/com.example.ptcare_cmu/motionGuide1.txt",
-                            "/data/data/com.example.ptcare_cmu/motionCriteria1.txt");
+                            "/data/data/com.example.ptcare_cmu/T01_motionCriteria_FE.txt");
                     for(int i=0; i<result.size(); i++) {
                         Log.e("Kenny", String.valueOf(result.get(i)));
                         str += result.get(i)+"\n";

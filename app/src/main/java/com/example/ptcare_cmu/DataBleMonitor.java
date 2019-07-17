@@ -12,6 +12,7 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
@@ -40,6 +41,7 @@ public class DataBleMonitor extends AppCompatActivity {
     private static final int REQUEST_ENABLE_LOCATION = 3;
 
     Fragment fragment;
+    Handler handler;
     //private BluetoothAdapter bluetoothAdapter;
     //private LocationManager locationStatus;
     int count = 0;
@@ -80,7 +82,6 @@ public class DataBleMonitor extends AppCompatActivity {
     }
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        fragment = getSupportFragmentManager().findFragmentById(R.id.main_activity_content);
         switch (item.getItemId()) {
             case R.id.add_action_code:
                 break;
@@ -106,9 +107,16 @@ public class DataBleMonitor extends AppCompatActivity {
                     ArrayList<BluetoothDevice> selectedDevice = data.getParcelableArrayListExtra(ScannerActivity.EXTRA_DEVICE);
                     if (selectedDevice!=null && selectedDevice.size()!=0) {
                         count++;
-                        Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.main_activity_content);
+                        fragment = getSupportFragmentManager().findFragmentById(R.id.main_activity_content);
+                        handler=new Handler(){
+                            @Override
+                            public void handleMessage(Message msg) {
+                                ((MainActivityFragment) fragment).addNewDevice((BluetoothDevice) msg.obj);
+                            }
+                        };
                         for (int i=0; i<selectedDevice.size(); i++){
-                            ((MainActivityFragment) fragment).addNewDevice(selectedDevice.get(i));
+                            Thread t2=new addThread(selectedDevice.get(i));
+                            t2.start();
                         }
                     }
                     if(count == 0) {
@@ -195,10 +203,19 @@ public class DataBleMonitor extends AppCompatActivity {
             ((MainActivityFragment) fragment).handleStopSampling();
             ((MainActivityFragment) fragment).data2file();
             ((MainActivityFragment) fragment).f2d();
-            ((MainActivityFragment) fragment).db2CSV();
             progressLoad_dialog.dismiss();
             finish();
             startActivity(new Intent(getApplicationContext(), Download.class));
+        }
+    }
+    //
+    class addThread extends Thread {
+        private BluetoothDevice selectedDevice;
+        public addThread(BluetoothDevice selectedDevice){
+            this.selectedDevice=selectedDevice;
+        }
+        public void run(){
+            handler.obtainMessage(1,selectedDevice).sendToTarget();
         }
     }
 }

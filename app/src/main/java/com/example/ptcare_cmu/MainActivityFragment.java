@@ -33,7 +33,6 @@
 package com.example.ptcare_cmu;
 
 import android.app.Activity;
-import android.app.Dialog;
 import android.bluetooth.BluetoothDevice;
 import android.content.ComponentName;
 import android.content.Context;
@@ -81,7 +80,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 
 import bolts.Continuation;
 import bolts.Task;
@@ -92,21 +90,22 @@ import bolts.Task;
 public class MainActivityFragment extends Fragment implements ServiceConnection {
     private final HashMap<DeviceState, MetaWearBoard> stateToBoards;
     private BtleService.LocalBinder binder;
-    private GyroBmi160 gyroBmi160;
-    private Accelerometer accelerometer;
     public Handler mHandler;
-    private DeviceState newDeviceState;
     public int tsec=0;
+    private int deviceConnectNum=0;
     private boolean isSampling=false;
-    private String na=null;
-    private String convert_FilePath=null;
+    private String[] na=null;
+    private String[] convert_FilePath=null;
+    String[] metaWearData=new String[3];
     private Boolean isSDPresent = false;
     private DBHelper dbhelper = null;
     private SQLiteDatabase sdb;
-    private String mwMacAddress;
-    private List<String> accL=new ArrayList<>();
-    private List<String> angvL=new ArrayList<>();
-    private List<String> angL=new ArrayList<>();
+    private String mwMacAddress,angle;
+    private List<GyroBmi160> gyroBmi160=new ArrayList<>();
+    private List<Accelerometer> accelerometer=new ArrayList<>();
+    private List<DeviceState> newDeviceStateList=new ArrayList<>();
+    private List<List<String[]>> metaWearDataBase = new ArrayList<>();
+
 
     String accl_entry;
     String angv_entry;
@@ -143,52 +142,37 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
 
 
     public void addNewDevice(BluetoothDevice btDevice) {
-        newDeviceState= new DeviceState(btDevice);
+        final DeviceState newDeviceState= new DeviceState(btDevice);
         final MetaWearBoard newBoard= binder.getMetaWearBoard(btDevice);
 
         mwMacAddress = btDevice.getAddress();
         newDeviceState.connecting= true;
+        newDeviceState.deviceNum=deviceConnectNum;
         connectedDevices.add(newDeviceState);
         stateToBoards.put(newDeviceState, newBoard);
-
-        newBoard.onUnexpectedDisconnect(status -> getActivity().runOnUiThread(() -> connectedDevices.remove(newDeviceState)));
+        this.deviceConnectNum++;
+        newBoard.onUnexpectedDisconnect(status -> getActivity().runOnUiThread(() -> {
+            connectedDevices.remove(newDeviceState);
+            this.deviceConnectNum--;
+        }));
         //--------------------------------------------------------------------------------------------------------------------------------
         newBoard.connectAsync().onSuccessTask((Continuation<Void, Task<Route>>) task -> {
             MainActivityFragment.this.getActivity().runOnUiThread(() -> {
             newDeviceState.connecting = false;
             connectedDevices.notifyDataSetChanged();
             });
-            accelerometer = newBoard.getModule(Accelerometer.class);
-            accelerometer.acceleration().stop();
-            accelerometer.stop();
-            if (accelerometer != null) {
-                accelerometer.configure()
-                        .odr(100f)       // Set sampling frequency to 25Hz, or closest valid ODR
-                        .range(4f)      // Set data range to +/-4g, or closet valid range
-                        .commit();
-                accelerometer.acceleration().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
-                    CalculateAngle(data.value(Acceleration.class));
-                    //------------------------------------------------------------------------------------------------------------------------------------
-                    mHandler.obtainMessage(HANDLER_UPDATE_ACCELEROMETER_RESULT, data.value(Acceleration.class)).sendToTarget();
-                }));
-            }
-            // Setup Gyro
-            gyroBmi160 = newBoard.getModule(GyroBmi160.class);
-            gyroBmi160.angularVelocity().stop();
-            gyroBmi160.stop();
 
-            if (gyroBmi160 != null) {
-//                    listSensors.add("Gyro");
-                // set the data rat to 50Hz and the
-                // data range to +/- 2000 degrees/s
-                gyroBmi160.configure()
-                        .odr(GyroBmi160.OutputDataRate.ODR_100_HZ)
-                        .range(GyroBmi160.Range.FSR_2000)
-                        .commit();
-                gyroBmi160.angularVelocity().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
-                    mHandler.obtainMessage(HANDLER_UPDATE_GYRO_RESULT, data.value(AngularVelocity.class)).sendToTarget();
-                }));
-            }
+            newDeviceStateList.add(newDeviceState);
+            accelerometer.add(newBoard.getModule(Accelerometer.class));
+            Log.e("Kenny","accelerometer++");
+            gyroBmi160.add(newBoard.getModule(GyroBmi160.class));
+            Log.e("Kenny","gyroBmi160++");
+
+            int deviceNum=newDeviceStateList.size()-1;
+            List<String[]> metaWearDataflash = new ArrayList<>();
+            metaWearDataBase.add(metaWearDataflash);
+            metaWearSensor(accelerometer.get(deviceNum),gyroBmi160.get(deviceNum),newDeviceStateList.get(deviceNum));
+
             return null;
         }).onSuccessTask(task -> newBoard.getModule(Switch.class).state().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
             getActivity().runOnUiThread(() -> {
@@ -199,11 +183,13 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
             if (task.isFaulted()) {
                 if (!newBoard.isConnected()) {
                     getActivity().runOnUiThread(() -> connectedDevices.remove(newDeviceState));
+                    this.deviceConnectNum--;
                 } else {
                     Snackbar.make(getActivity().findViewById(R.id.activity_main_layout), task.getError().getLocalizedMessage(), Snackbar.LENGTH_SHORT).show();
                     newBoard.tearDown();
                     newBoard.disconnectAsync().continueWith((Continuation<Void, Void>) task1 -> {
                         connectedDevices.remove(newDeviceState);
+                        this.deviceConnectNum--;
                         return null;
                     });
                 }
@@ -230,6 +216,9 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
 
             Accelerometer accelerometer = selectedBoard.getModule(Accelerometer.class);
             accelerometer.stop();
+            GyroBmi160 gyroBmi160=selectedBoard.getModule(GyroBmi160.class);
+            gyroBmi160.stop();
+
             selectedBoard.tearDown();
             selectedBoard.getModule(Debug.class).disconnectAsync();
 
@@ -248,7 +237,7 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
 
     }
     //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    private void CalculateAngle(Acceleration AccelerationData)
+    private void CalculateAngle(Acceleration AccelerationData,DeviceState newDeviceState,String[] metaWearData)
     {
         double Denominator = Math.sqrt(Math.pow(AccelerationData.x(), 2) + Math.pow(AccelerationData.y(), 2) + Math.pow(AccelerationData.z(), 2));
 
@@ -261,7 +250,7 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
         newDeviceState.deviceAngle = ans;
         ang_entry=","+AngleX+","+AngleY+","+AngleZ;
         if (isSampling){
-            angL.add(ang_entry);
+            metaWearData[2]=ang_entry;
         }
     }
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////-----------------------CalculateAngle
@@ -273,22 +262,26 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void handleStartSampling() {
         isSampling = true;
-        accelerometer.acceleration().start();
-        accelerometer.start();
+        for (int i=0; i< accelerometer.size();i++){
+            accelerometer.get(i).acceleration().start();
+            accelerometer.get(i).start();
 
-        gyroBmi160.angularVelocity().start();
-        gyroBmi160.start();
+            gyroBmi160.get(i).angularVelocity().start();
+            gyroBmi160.get(i).start();
+        }
 
         tsec=0;
         mHandler.postDelayed(runnable,1000); // 開始Timer
     }
 
     public void handleStopSampling() {
-        accelerometer.acceleration().stop();
-        accelerometer.stop();
+        for (int i=0; i< accelerometer.size();i++){
+            accelerometer.get(i).acceleration().stop();
+            accelerometer.get(i).stop();
 
-        gyroBmi160.angularVelocity().stop();
-        gyroBmi160.stop();
+            gyroBmi160.get(i).angularVelocity().stop();
+            gyroBmi160.get(i).stop();
+        }
         isSampling = false;
 
         mHandler.removeCallbacks(runnable); //停止Timer
@@ -298,8 +291,10 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
             //	update( );
             tsec++;
             mHandler.postDelayed(this,1000);
+            for (int i=0; i< accelerometer.size();i++){
+                newDeviceStateList.get(i).deviceTime=Integer.toString(tsec);
+            }
 
-            newDeviceState.deviceTime=Integer.toString(tsec);
 
         }
     };
@@ -310,27 +305,10 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
             switch (msg.what) {
                 // Sensors
                 case HANDLER_UPDATE_ACCELEROMETER_RESULT:
-                    if (isSampling){
-                        Acceleration data = ((Acceleration) msg.obj);
-                        accl_entry = String.format("%.6f", data.x()) + "," +
-                                String.format("%.6f", data.y())  + "," +
-                                String.format("%.6f", data.z()) ;
-                        accL.add(accl_entry);
-                        newDeviceState.deviceAcceleration=data.toString();
-                        connectedDevices.notifyDataSetChanged();
-                    }
+                    connectedDevices.notifyDataSetChanged();
                     return false;
                 case HANDLER_UPDATE_GYRO_RESULT:
-                    final double Deg2Rad = Math.PI / 180.0;
-                    if (isSampling){
-                        AngularVelocity data = (AngularVelocity) msg.obj;
-                        angv_entry =   ","+String.format("%.6f", data.x() * Deg2Rad) + "," +
-                                String.format("%.6f", data.y() * Deg2Rad) + "," +
-                                String.format("%.6f", data.z() * Deg2Rad);
-                        angvL.add(angv_entry);
-                        newDeviceState.deviceGYRO = data.toString();
-                        connectedDevices.notifyDataSetChanged();
-                    }
+                    connectedDevices.notifyDataSetChanged();
                     return false;
             }
             return false;
@@ -340,8 +318,9 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     public void createSysDir()
     {
         File[] dirs = ContextCompat.getExternalFilesDirs(getContext(), null);
-        Log.e("Kenny", String.valueOf(dirs[0]));
         File removable = null;
+        na=new String[deviceConnectNum];
+        convert_FilePath=new String[deviceConnectNum];
 
         if (dirs.length > 0) {
             removable= dirs[0];
@@ -349,45 +328,53 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
 
         if (removable.exists() && removable.canRead() && removable.canWrite()) {
 
-            SimpleDateFormat formatter1 = new SimpleDateFormat("YYYYMMddHHmm ");
+            SimpleDateFormat formatter1 = new SimpleDateFormat("yyyyMMddHHmm ");
             Date curDate = new Date(System.currentTimeMillis());//獲取當前時間
 
             String cur=formatter1.format(curDate);
-            Log.e("Kenny", removable.toString());
-            File test = new File(removable,cur.trim()+".txt");
-            File convertFile = new File(removable,cur.trim()+".csv");
-            try {
-                test.createNewFile(); // Throws the exception mentioned above
-                convertFile.createNewFile();
-                //test.mkdir();
-                na=test.getParent()+"/"+cur.trim()+".txt";
-                convert_FilePath=convertFile.getParent()+"/"+cur.trim()+".csv";
+            for (int i=0; i<deviceConnectNum;i++){
+                File test = new File(removable,cur.trim()+"_"+i+".txt");
+                File convertFile = new File(removable,cur.trim()+"_"+i+".csv");
+                try {
+                    test.createNewFile(); // Throws the exception mentioned above
+                    convertFile.createNewFile();
+                    //test.mkdir();
+                    na[i]=test.getParent()+"/"+cur.trim()+"_"+i+".txt";
+                    convert_FilePath[i]=convertFile.getParent()+"/"+cur.trim()+"_"+i+".csv";
 
-                isSDPresent=true;
+                    isSDPresent=true;
+                }
+                catch (Exception e) {
+                    Log.e(getClass().getSimpleName(), "Exception creating file", e);
+                    Toast.makeText(getContext(), e.getMessage(), Toast.LENGTH_LONG).show();
+                }
             }
-            catch (Exception e) {
-                Log.e(getClass().getSimpleName(), "Exception creating file", e);
-                Toast.makeText(getContext(), e.getMessage(), Toast.LENGTH_LONG).show();
-            }
+
         }
     }
     //
     public void data2file(){
         createSysDir();
-        Log.e("Kenny",String.valueOf(angvL.size()));
-
-        if (na!=null){
-            OutputStream out;
-            for (int i=0; i<angvL.size(); i++){
-                try {
-                    out = new BufferedOutputStream(new FileOutputStream(na, true));
-                    out.write(accL.get(i).getBytes());
-                    out.write(angvL.get(i).getBytes());
-                    out.write(angL.get(i).getBytes());
-                    out.write("\n".getBytes());
-                    out.close();
-                } catch (Exception e) {
-                    Log.e("r", "CSV creation error", e);
+//        Log.e("Kenny",String.valueOf(angvL.size()));
+//
+        for (int i=0;i<na.length;i++){
+            Log.e("r", na[i]);
+            if (na[i]!=null){
+                OutputStream out;
+                Log.e("metaWear "+i, String.valueOf(metaWearDataBase.get(i).size()));
+                for (int j=0; j<metaWearDataBase.get(i).size(); j++){
+                    try {
+                        out = new BufferedOutputStream(new FileOutputStream(na[i], true));
+                        if (metaWearDataBase.get(i).get(j)[0]!=null&&metaWearDataBase.get(i).get(j)[1]!=null&&metaWearDataBase.get(i).get(j)[2]!=null){
+                            out.write(metaWearDataBase.get(i).get(j)[0].getBytes());
+                            out.write(metaWearDataBase.get(i).get(j)[1].getBytes());
+                            out.write(metaWearDataBase.get(i).get(j)[2].getBytes());
+                            out.write("\n".getBytes());
+                        }
+                        out.close();
+                    } catch (Exception e) {
+                        Log.e("r", "CSV creation error", e);
+                    }
                 }
             }
         }
@@ -397,60 +384,111 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
         //--------------------------------------------------------------------------------------------------------------------------------------------------------
         //  sdb = dbhelper.getWritableDatabase();
         //   dbhelper.openDatabase();
-        sdb = dbhelper.getWritableDatabase();
+        for (int i=0;i<na.length;i++) {
+            sdb = dbhelper.getWritableDatabase();
 
-        sdb.delete("jy61_record",null,null);
-        try {
-            InputStreamReader isr = new InputStreamReader(new FileInputStream(na));//檔案讀取路徑
-            BufferedReader reader = new BufferedReader(isr);
-            String line = null;
-            String rectime=na.substring(na.lastIndexOf("/"));
+            sdb.delete("jy61_record",null,null);
+            try {
+                InputStreamReader isr = new InputStreamReader(new FileInputStream(na[i]));//檔案讀取路徑
+                BufferedReader reader = new BufferedReader(isr);
+                String line = null;
+                String rectime=na[i].substring(na[i].lastIndexOf("/"));
 
-            if (sdb != null) {
-                if (sdb.isOpen()) {
-                    while ((line = reader.readLine()) != null) {
-                        String item[] = line.split(",");
-                        //  Log.d("length: ",String.valueOf(item.length));
+                if (sdb != null) {
+                    if (sdb.isOpen()) {
+                        while ((line = reader.readLine()) != null) {
+                            String item[] = line.split(",");
+                            //  Log.d("length: ",String.valueOf(item.length));
 
-                        String sql = "insert into jy61_record (device_name,start_time,accx,accy,accz,angvx,angvy,angvz,angx,angy,angz ) " +
-                                "values (?, ?, ?, ?,?, ?, ?, ?,?, ?, ?);";
-                        if(item.length==9){
+                            String sql = "insert into jy61_record (device_name,start_time,accx,accy,accz,angvx,angvy,angvz,angx,angy,angz ) " +
+                                    "values (?, ?, ?, ?,?, ?, ?, ?,?, ?, ?);";
+                            if(item.length==9){
 
-                            sdb.beginTransaction();
-                            SQLiteStatement stmt = sdb.compileStatement(sql);
+                                sdb.beginTransaction();
+                                SQLiteStatement stmt = sdb.compileStatement(sql);
 
-                            //  for (int i = 0; i < insert_db; i++) {
-                            stmt.bindString(1, mwMacAddress);
-                            stmt.bindString(2, rectime.substring(1));
-                            stmt.bindString(3, item[0].trim());
-                            stmt.bindString(4, item[1].trim());
-                            stmt.bindString(5, item[2].trim());
-                            stmt.bindString(6, item[3].trim());
-                            stmt.bindString(7, item[4].trim());
-                            stmt.bindString(8, item[5].trim());
-                            stmt.bindString(9, item[6].trim());
-                            stmt.bindString(10, item[7].trim());
-                            stmt.bindString(11, item[8].trim());
+                                //  for (int i = 0; i < insert_db; i++) {
+                                stmt.bindString(1, mwMacAddress);
+                                stmt.bindString(2, rectime.substring(1));
+                                stmt.bindString(3, item[0].trim());
+                                stmt.bindString(4, item[1].trim());
+                                stmt.bindString(5, item[2].trim());
+                                stmt.bindString(6, item[3].trim());
+                                stmt.bindString(7, item[4].trim());
+                                stmt.bindString(8, item[5].trim());
+                                stmt.bindString(9, item[6].trim());
+                                stmt.bindString(10, item[7].trim());
+                                stmt.bindString(11, item[8].trim());
 
-                            long entryID = stmt.executeInsert();
+                                long entryID = stmt.executeInsert();
 
-                            stmt.clearBindings();
-                            sdb.setTransactionSuccessful();
-                            sdb.endTransaction();
+                                stmt.clearBindings();
+                                sdb.setTransactionSuccessful();
+                                sdb.endTransaction();
+                            }
                         }
                     }
                 }
+                sdb.close();  //可自行變化成存入陣列或arrayList方便之後存取
+            } catch(IOException e) {
+                e.printStackTrace();
             }
-            sdb.close();  //可自行變化成存入陣列或arrayList方便之後存取
-        } catch(IOException e) {
-            e.printStackTrace();
+            db2CSV(i);
         }
     }
 
-    //檔案輸出成csv
-    public void db2CSV(){
+//    檔案輸出成csv
+    public void db2CSV(int i){
         DataTransfer dataTransfer=new DataTransfer();
-        dataTransfer.calMotion(convert_FilePath,getContext());
+        dataTransfer.calMotion(convert_FilePath[i],getContext());
     }
 
+    //
+    private void metaWearSensor(Accelerometer accelerometer, GyroBmi160 gyroBmi160,DeviceState newDeviceState){
+        accelerometer.acceleration().stop();
+        accelerometer.stop();
+
+        if (accelerometer != null) {
+            accelerometer.configure()
+                    .odr(100f)       // Set sampling frequency to 25Hz, or closest valid ODR
+                    .range(4f)      // Set data range to +/-4g, or closet valid range
+                    .commit();
+            accelerometer.acceleration().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
+                metaWearData=new String[3];
+                CalculateAngle(data.value(Acceleration.class),newDeviceState,metaWearData);
+                newDeviceState.deviceAcceleration=data.value(Acceleration.class).toString();
+                accl_entry = String.format("%.6f", data.value(Acceleration.class).x()) + "," +
+                        String.format("%.6f", data.value(Acceleration.class).y())  + "," +
+                        String.format("%.6f", data.value(Acceleration.class).z()) ;
+                metaWearData[0]=accl_entry;
+                //------------------------------------------------------------------------------------------------------------------------------------
+                mHandler.obtainMessage(HANDLER_UPDATE_ACCELEROMETER_RESULT, data.value(Acceleration.class)).sendToTarget();
+            }));
+        }
+        // Setup Gyro
+        gyroBmi160.angularVelocity().stop();
+        gyroBmi160.stop();
+
+        if (gyroBmi160 != null) {
+//                    listSensors.add("Gyro");
+            // set the data rat to 50Hz and the
+            // data range to +/- 2000 degrees/s
+            gyroBmi160.configure()
+                    .odr(GyroBmi160.OutputDataRate.ODR_100_HZ)
+                    .range(GyroBmi160.Range.FSR_2000)
+                    .commit();
+            gyroBmi160.angularVelocity().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
+                newDeviceState.deviceGYRO = data.value(AngularVelocity.class).toString();
+                final double Deg2Rad = Math.PI / 180.0;
+                angv_entry =   ","+String.format("%.6f", data.value(AngularVelocity.class).x() * Deg2Rad) + "," +
+                        String.format("%.6f", data.value(AngularVelocity.class).y() * Deg2Rad) + "," +
+                        String.format("%.6f", data.value(AngularVelocity.class).z() * Deg2Rad);
+                metaWearData[1]=angv_entry;
+                metaWearDataBase.get(newDeviceState.deviceNum).add(metaWearData);
+                Log.e("MetaWear"+newDeviceState.deviceNum,metaWearDataBase.get(newDeviceState.deviceNum).get(metaWearDataBase.get(newDeviceState.deviceNum).size()-1)[0]+metaWearDataBase.get(newDeviceState.deviceNum).get(metaWearDataBase.get(newDeviceState.deviceNum).size()-1)[1]+metaWearDataBase.get(newDeviceState.deviceNum).get(metaWearDataBase.get(newDeviceState.deviceNum).size()-1)[2]);
+
+                mHandler.obtainMessage(HANDLER_UPDATE_GYRO_RESULT, data.value(AngularVelocity.class)).sendToTarget();
+            }));
+        }
+    }
 }
