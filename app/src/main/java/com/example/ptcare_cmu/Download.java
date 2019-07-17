@@ -118,7 +118,6 @@ public class Download extends MainActivity {
                 progressBar.setVisibility(View.GONE);
                 tvResult.setText(message.obj.toString());
 
-                //////////////////////////////////////////////////////////QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ
                 Intent intent = new Intent(getApplicationContext(), LineChartActivity.class);
                 startActivity(intent);
             }
