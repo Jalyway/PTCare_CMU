@@ -104,12 +104,6 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     public List<Accelerometer> accelerometer=new ArrayList<>();
     public List<DeviceState> newDeviceStateList=new ArrayList<>();
     private List<List<String>> metaWearDataBase = new ArrayList<>();
-    private List<String[]> metaWearDataArray = new ArrayList<>();
-
-
-    String accl_entry;
-    String angv_entry;
-    String ang_entry;
 
     private final static int HANDLER_UPDATE_ACCELEROMETER_RESULT = 100;
     private final static int HANDLER_UPDATE_GYRO_RESULT = 105;
@@ -170,7 +164,6 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
             int deviceNum=newDeviceStateList.size()-1;
             List<String> metaWearDataflash = new ArrayList<>();
             metaWearDataBase.add(metaWearDataflash);
-            metaWearDataArray.add(new String[3]);
             Thread metaWear_setupThread=new metaWear_stepUpThread(deviceNum);
             metaWear_setupThread.start();
 
@@ -238,7 +231,7 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
 
     }
     //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    private String CalculateAngle(Acceleration AccelerationData,DeviceState newDeviceState)
+    private void CalculateAngle(Acceleration AccelerationData,DeviceState newDeviceState)
     {
         double Denominator = Math.sqrt(Math.pow(AccelerationData.x(), 2) + Math.pow(AccelerationData.y(), 2) + Math.pow(AccelerationData.z(), 2));
 
@@ -249,8 +242,8 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
                 "y:\t" + String.format("%.3f", AngleY) + "g, " +
                 "z:\t" + String.format("%.3f", AngleZ) + "g)";
         newDeviceState.deviceAngle = ans;
-        ang_entry=","+AngleX+","+AngleY+","+AngleZ;
-        return ang_entry;
+        String ang_entry=","+AngleX+","+AngleY+","+AngleZ;
+        newDeviceState.deviceAngleRC=ang_entry;
     }
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////-----------------------CalculateAngle
     private double CalculateAngle(float Value, double Denominator)      //使用弧度計算角度
@@ -441,28 +434,7 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     }
 
     //
-    private void metaWearSensor(Accelerometer accelerometer, GyroBmi160 gyroBmi160,DeviceState newDeviceState,String[] metaWearData){
-        accelerometer.packedAcceleration().stop();
-        accelerometer.stop();
-
-        if (accelerometer != null) {
-            accelerometer.configure()
-                    .odr(100f)       // Set sampling frequency to 25Hz, or closest valid ODR
-                    .range(4f)      // Set data range to +/-4g, or closet valid range
-                    .commit();
-            accelerometer.packedAcceleration().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
-                metaWearData[2]= CalculateAngle(data.value(Acceleration.class),newDeviceState);
-                newDeviceState.deviceAcceleration=data.value(Acceleration.class).toString();
-                accl_entry = String.format("%.6f", data.value(Acceleration.class).x()) + "," +
-                        String.format("%.6f", data.value(Acceleration.class).y())  + "," +
-                        String.format("%.6f", data.value(Acceleration.class).z()) ;
-                metaWearData[0]=accl_entry;
-                accelerometer.packedAcceleration().stop();
-                accelerometer.stop();
-                //------------------------------------------------------------------------------------------------------------------------------------
-                mHandler.obtainMessage(HANDLER_UPDATE_ACCELEROMETER_RESULT, data.value(Acceleration.class)).sendToTarget();
-            }));
-        }
+    private void metaWearSensor(Accelerometer accelerometer, GyroBmi160 gyroBmi160,DeviceState newDeviceState){
         // Setup Gyro
         gyroBmi160.packedAngularVelocity().stop();
         gyroBmi160.stop();
@@ -478,19 +450,38 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
             gyroBmi160.packedAngularVelocity().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
                 newDeviceState.deviceGYRO = data.value(AngularVelocity.class).toString();
                 final double Deg2Rad = Math.PI / 180.0;
-                angv_entry =   ","+String.format("%.6f", data.value(AngularVelocity.class).x() * Deg2Rad) + "," +
+                String angv_entry =   ","+String.format("%.6f", data.value(AngularVelocity.class).x() * Deg2Rad) + "," +
                         String.format("%.6f", data.value(AngularVelocity.class).y() * Deg2Rad) + "," +
                         String.format("%.6f", data.value(AngularVelocity.class).z() * Deg2Rad);
-                metaWearData[1]=angv_entry;
-                String inputString = metaWearData[0]+metaWearData[1]+metaWearData[2];
-                metaWearDataBase.get(newDeviceState.deviceNum).add(inputString);
-                Log.e("MetaWear"+newDeviceState.deviceNum,metaWearDataBase.get(newDeviceState.deviceNum).get(metaWearDataBase.get(newDeviceState.deviceNum).size()-1));
+                newDeviceState.deviceGYRORC = angv_entry;
                 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-                accelerometer.packedAcceleration().start();
-                accelerometer.start();
                 mHandler.obtainMessage(HANDLER_UPDATE_GYRO_RESULT, data.value(AngularVelocity.class)).sendToTarget();
             }));
         }
+
+        accelerometer.packedAcceleration().stop();
+        accelerometer.stop();
+
+        if (accelerometer != null) {
+            accelerometer.configure()
+                    .odr(100f)       // Set sampling frequency to 25Hz, or closest valid ODR
+                    .range(4f)      // Set data range to +/-4g, or closet valid range
+                    .commit();
+            accelerometer.packedAcceleration().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
+                CalculateAngle(data.value(Acceleration.class),newDeviceState);
+                newDeviceState.deviceAcceleration=data.value(Acceleration.class).toString();
+                String accl_entry = String.format("%.6f", data.value(Acceleration.class).x()) + "," +
+                        String.format("%.6f", data.value(Acceleration.class).y())  + "," +
+                        String.format("%.6f", data.value(Acceleration.class).z()) ;
+                newDeviceState.deviceAccelerationRC=accl_entry;
+                String inputString = newDeviceState.deviceAccelerationRC+newDeviceState.deviceGYRORC+newDeviceState.deviceAngleRC;
+                metaWearDataBase.get(newDeviceState.deviceNum).add(inputString);
+                Log.e("MetaWear"+newDeviceState.deviceNum,metaWearDataBase.get(newDeviceState.deviceNum).get(metaWearDataBase.get(newDeviceState.deviceNum).size()-1));
+                //------------------------------------------------------------------------------------------------------------------------------------
+                mHandler.obtainMessage(HANDLER_UPDATE_ACCELEROMETER_RESULT, data.value(Acceleration.class)).sendToTarget();
+            }));
+        }
+
     }
 
     //
@@ -504,7 +495,7 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
         }
 
         public void run(){
-            metaWearSensor(accelerometer.get(deviceNum),gyroBmi160.get(deviceNum),newDeviceStateList.get(deviceNum),metaWearDataArray.get(deviceNum));
+            metaWearSensor(accelerometer.get(deviceNum),gyroBmi160.get(deviceNum),newDeviceStateList.get(deviceNum));
         }
     }
 }

@@ -44,6 +44,9 @@ class DeviceState implements Serializable {
     String deviceAcceleration;
     String deviceGYRO;
     String deviceTime;
+    String deviceAccelerationRC;
+    String deviceGYRORC;
+    String deviceAngleRC;
     int deviceNum;
     boolean pressed, connecting;
 
@@ -52,6 +55,9 @@ class DeviceState implements Serializable {
         this.deviceAngle= null;
         this.deviceAcceleration= null;
         this.deviceGYRO= null;
+        this.deviceAngleRC= null;
+        this.deviceAccelerationRC= null;
+        this.deviceGYRORC= null;
         this.deviceTime= null;
         this.deviceNum=0;
         pressed= false;
