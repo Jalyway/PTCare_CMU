@@ -151,8 +151,8 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
         //--------------------------------------------------------------------------------------------------------------------------------
         newBoard.connectAsync().onSuccessTask((Continuation<Void, Task<Route>>) task -> {
             MainActivityFragment.this.getActivity().runOnUiThread(() -> {
-            newDeviceState.connecting = false;
-            connectedDevices.notifyDataSetChanged();
+                newDeviceState.connecting = false;
+                connectedDevices.notifyDataSetChanged();
             });
 
             newDeviceStateList.add(newDeviceState);
