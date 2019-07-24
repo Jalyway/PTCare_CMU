@@ -1,19 +1,13 @@
 package com.example.ptcare_cmu;
 
 import android.app.Activity;
-import android.app.Dialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
-import android.location.LocationManager;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.HandlerThread;
-import android.os.Message;
-import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
@@ -41,7 +35,6 @@ public class DataBleMonitor extends AppCompatActivity {
     private static final int REQUEST_ENABLE_LOCATION = 3;
 
     Fragment fragment;
-    Handler handler;
     //private BluetoothAdapter bluetoothAdapter;
     //private LocationManager locationStatus;
     int count = 0;
@@ -108,15 +101,8 @@ public class DataBleMonitor extends AppCompatActivity {
                     if (selectedDevice!=null && selectedDevice.size()!=0) {
                         count++;
                         fragment = getSupportFragmentManager().findFragmentById(R.id.main_activity_content);
-                        handler=new Handler(){
-                            @Override
-                            public void handleMessage(Message msg) {
-                                ((MainActivityFragment) fragment).addNewDevice((BluetoothDevice) msg.obj);
-                            }
-                        };
                         for (int i=0; i<selectedDevice.size(); i++){
-                            Thread t2=new addThread(selectedDevice.get(i));
-                            t2.start();
+                            ((MainActivityFragment) fragment).addNewDevice((BluetoothDevice) selectedDevice.get(i));
                         }
                     }
                     if(count == 0) {
@@ -202,20 +188,10 @@ public class DataBleMonitor extends AppCompatActivity {
         public void run(){
             ((MainActivityFragment) fragment).handleStopSampling();
             ((MainActivityFragment) fragment).data2file();
-            ((MainActivityFragment) fragment).f2d();
+//            ((MainActivityFragment) fragment).f2d();
             progressLoad_dialog.dismiss();
             finish();
             startActivity(new Intent(getApplicationContext(), Download.class));
-        }
-    }
-    //
-    class addThread extends Thread {
-        private BluetoothDevice selectedDevice;
-        public addThread(BluetoothDevice selectedDevice){
-            this.selectedDevice=selectedDevice;
-        }
-        public void run(){
-            handler.obtainMessage(1,selectedDevice).sendToTarget();
         }
     }
 }

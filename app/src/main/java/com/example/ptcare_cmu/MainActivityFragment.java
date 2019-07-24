@@ -92,7 +92,7 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     private BtleService.LocalBinder binder;
     public Handler mHandler;
     public int tsec=0;
-    private int deviceConnectNum=0;
+    public int deviceConnectNum=0;
     private boolean isSampling=false;
     private String[] na=null;
     private String[] convert_FilePath=null;
@@ -103,6 +103,7 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     public List<GyroBmi160> gyroBmi160=new ArrayList<>();
     public List<Accelerometer> accelerometer=new ArrayList<>();
     public List<DeviceState> newDeviceStateList=new ArrayList<>();
+    public List<MetaWearBoard> newBoardList=new ArrayList<>();
     private List<List<String>> metaWearDataBase = new ArrayList<>();
 
     private final static int HANDLER_UPDATE_ACCELEROMETER_RESULT = 100;
@@ -137,59 +138,24 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
 
     public void addNewDevice(BluetoothDevice btDevice) {
         DeviceState newDeviceState= new DeviceState(btDevice);
-        MetaWearBoard newBoard= binder.getMetaWearBoard(btDevice);
+        newBoardList.add(binder.getMetaWearBoard(btDevice));
         mwMacAddress = btDevice.getAddress();
         newDeviceState.connecting= true;
         newDeviceState.deviceNum=deviceConnectNum;
         connectedDevices.add(newDeviceState);
-        stateToBoards.put(newDeviceState, newBoard);
+        stateToBoards.put(newDeviceState, newBoardList.get(newDeviceState.deviceNum));
+        newBoardSetting(newBoardList.get(newDeviceState.deviceNum),newDeviceState);
         this.deviceConnectNum++;
-        newBoard.onUnexpectedDisconnect(status -> getActivity().runOnUiThread(() -> {
-            connectedDevices.remove(newDeviceState);
-            this.deviceConnectNum--;
-        }));
-        //--------------------------------------------------------------------------------------------------------------------------------
-        newBoard.connectAsync().onSuccessTask((Continuation<Void, Task<Route>>) task -> {
-            MainActivityFragment.this.getActivity().runOnUiThread(() -> {
-                newDeviceState.connecting = false;
-                connectedDevices.notifyDataSetChanged();
-            });
 
-            newDeviceStateList.add(newDeviceState);
-            accelerometer.add(newBoard.getModule(Accelerometer.class));
-            Log.e("Kenny","accelerometer++");
-            gyroBmi160.add(newBoard.getModule(GyroBmi160.class));
-            Log.e("Kenny","gyroBmi160++");
-
-            int deviceNum=newDeviceStateList.size()-1;
-            List<String> metaWearDataflash = new ArrayList<>();
-            metaWearDataBase.add(metaWearDataflash);
-            Thread metaWear_setupThread=new metaWear_stepUpThread(deviceNum);
-            metaWear_setupThread.start();
-
-            return null;
-        }).onSuccessTask(task -> newBoard.getModule(Switch.class).state().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
-            getActivity().runOnUiThread(() -> {
-                newDeviceState.pressed = data.value(Boolean.class);
-                connectedDevices.notifyDataSetChanged();
-            });
-        }))).continueWith((Continuation<Route, Void>) task -> {
-            if (task.isFaulted()) {
-                if (!newBoard.isConnected()) {
-                    getActivity().runOnUiThread(() -> connectedDevices.remove(newDeviceState));
-                    this.deviceConnectNum--;
-                } else {
-                    Snackbar.make(getActivity().findViewById(R.id.activity_main_layout), task.getError().getLocalizedMessage(), Snackbar.LENGTH_SHORT).show();
-                    newBoard.tearDown();
-                    newBoard.disconnectAsync().continueWith((Continuation<Void, Void>) task1 -> {
-                        connectedDevices.remove(newDeviceState);
-                        this.deviceConnectNum--;
-                        return null;
-                    });
-                }
-            }
-            return null;
-        });
+        //------------------------------------------------------------------------------------------------
+//        DeviceState newDeviceState= new DeviceState(btDevice);
+//        NewBoardState newBoardState=new NewBoardState(binder.getMetaWearBoard(btDevice), newDeviceState);
+//        newDeviceState.connecting= true;
+//        newDeviceState.deviceNum=deviceConnectNum;
+//        connectedDevices.add(newDeviceState);
+//        stateToBoards.put(newDeviceState, newBoardState.newBoard);
+//        newBoardSetting(newBoardState.newBoard,newDeviceState);
+//        this.deviceConnectNum++;
     }
 
     @Override
@@ -455,7 +421,6 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
                         String.format("%.6f", data.value(AngularVelocity.class).z() * Deg2Rad);
                 newDeviceState.deviceGYRORC = angv_entry;
                 //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-                mHandler.obtainMessage(HANDLER_UPDATE_GYRO_RESULT, data.value(AngularVelocity.class)).sendToTarget();
             }));
         }
 
@@ -482,6 +447,60 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
             }));
         }
 
+    }
+
+    private void newBoardSetting(MetaWearBoard newBoard, DeviceState newDeviceState){
+        newBoard.onUnexpectedDisconnect(status -> getActivity().runOnUiThread(() -> {
+            connectedDevices.remove(newDeviceState);
+            this.deviceConnectNum--;
+            Log.e("Kenny","1111111,"+this.deviceConnectNum);
+        }));
+        //--------------------------------------------------------------------------------------------------------------------------------
+        newBoard.connectAsync().onSuccessTask((Continuation<Void, Task<Route>>) task -> {
+            MainActivityFragment.this.getActivity().runOnUiThread(() -> {
+                newDeviceState.connecting = false;
+                connectedDevices.notifyDataSetChanged();
+            });
+
+            newDeviceStateList.add(newDeviceState);
+            accelerometer.add(newBoard.getModule(Accelerometer.class));
+            Log.e("Kenny","accelerometer++");
+            gyroBmi160.add(newBoard.getModule(GyroBmi160.class));
+            Log.e("Kenny","gyroBmi160++");
+
+            int deviceNum=newDeviceStateList.size()-1;
+            List<String> metaWearDataflash = new ArrayList<>();
+            metaWearDataBase.add(metaWearDataflash);
+            Thread metaWear_setupThread=new metaWear_stepUpThread(deviceNum);
+            metaWear_setupThread.start();
+
+            return null;
+        }).onSuccessTask(task -> newBoard.getModule(Switch.class).state().addRouteAsync(source -> source.stream((Subscriber) (data, env) -> {
+            getActivity().runOnUiThread(() -> {
+                newDeviceState.pressed = data.value(Boolean.class);
+                connectedDevices.notifyDataSetChanged();
+            });
+        }))).continueWith((Continuation<Route, Void>) task -> {
+            if (task.isFaulted()) {
+                if (!newBoard.isConnected()) {
+                    getActivity().runOnUiThread(() -> {
+                        connectedDevices.remove(newDeviceState);
+                        this.deviceConnectNum--;
+                        Log.e("Kenny","22222222");
+                    });
+                } else {
+                    Snackbar.make(getActivity().findViewById(R.id.activity_main_layout), task.getError().getLocalizedMessage(), Snackbar.LENGTH_SHORT).show();
+                    newBoard.tearDown();
+                    newBoard.disconnectAsync().continueWith((Continuation<Void, Void>) task1 -> {
+                        connectedDevices.remove(newDeviceState);
+                        this.deviceConnectNum--;
+                        Log.e("Kenny","33333333333");
+                        return null;
+                    });
+                }
+            }
+            return null;
+        });
     }
 
     //
