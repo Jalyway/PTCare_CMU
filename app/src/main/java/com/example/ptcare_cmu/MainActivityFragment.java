@@ -98,7 +98,7 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     private Boolean isSDPresent = false;
     private DBHelper dbhelper = null;
     private SQLiteDatabase sdb;
-    private String mwMacAddress;
+    private String mwMacAddress="000";
     private BoardStateQueue boardStateQueue=new BoardStateQueue();
     public List<DeviceState> newDeviceStateList=new ArrayList<>();
     private int deviceConnectionNum=0;
@@ -141,8 +141,8 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
         newDeviceState.deviceNum=deviceConnectionNum;
         connectedDevices.add(newDeviceState);
         stateToBoards.put(newDeviceState, newBoardState.newBoard);
-        newBoardSetting(newBoardState);
         boardStateQueue.addNewBoard(newBoardState);
+        newBoardSetting(newBoardState);
         this.deviceConnectionNum++;
     }
 
@@ -431,7 +431,7 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
                 newDeviceState.deviceAccelerationRC=accl_entry;
                 String inputString = newDeviceState.deviceAccelerationRC+newDeviceState.deviceGYRORC+newDeviceState.deviceAngleRC;
                 newBoardState.metaWearDataflash.add(inputString);
-                Log.e("MetaWear",newBoardState.metaWearDataflash.get(newBoardState.metaWearDataflash.size()-1));
+                Log.e("MetaWear"+newDeviceState.deviceNum,newBoardState.metaWearDataflash.get(newBoardState.metaWearDataflash.size()-1));
                 //------------------------------------------------------------------------------------------------------------------------------------
                 mHandler.obtainMessage(HANDLER_UPDATE_ACCELEROMETER_RESULT, data.value(Acceleration.class)).sendToTarget();
             }));
