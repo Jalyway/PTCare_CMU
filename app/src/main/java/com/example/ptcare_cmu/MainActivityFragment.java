@@ -92,7 +92,6 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     private BtleService.LocalBinder binder;
     public Handler mHandler;
     public int tsec=0;
-    public int deviceConnectNum=0;
     private boolean isSampling=false;
     private String[] na=null;
     private String[] convert_FilePath=null;
@@ -100,11 +99,9 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     private DBHelper dbhelper = null;
     private SQLiteDatabase sdb;
     private String mwMacAddress;
-    public List<GyroBmi160> gyroBmi160=new ArrayList<>();
-    public List<Accelerometer> accelerometer=new ArrayList<>();
+    private BoardStateQueue boardStateQueue=new BoardStateQueue();
     public List<DeviceState> newDeviceStateList=new ArrayList<>();
-    public List<MetaWearBoard> newBoardList=new ArrayList<>();
-    private List<List<String>> metaWearDataBase = new ArrayList<>();
+    private int deviceConnectionNum=0;
 
     private final static int HANDLER_UPDATE_ACCELEROMETER_RESULT = 100;
     private final static int HANDLER_UPDATE_GYRO_RESULT = 105;
@@ -137,25 +134,16 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
 
 
     public void addNewDevice(BluetoothDevice btDevice) {
-        DeviceState newDeviceState= new DeviceState(btDevice);
-        newBoardList.add(binder.getMetaWearBoard(btDevice));
-        mwMacAddress = btDevice.getAddress();
-        newDeviceState.connecting= true;
-        newDeviceState.deviceNum=deviceConnectNum;
-        connectedDevices.add(newDeviceState);
-        stateToBoards.put(newDeviceState, newBoardList.get(newDeviceState.deviceNum));
-        newBoardSetting(newBoardList.get(newDeviceState.deviceNum),newDeviceState);
-        this.deviceConnectNum++;
-
         //------------------------------------------------------------------------------------------------
-//        DeviceState newDeviceState= new DeviceState(btDevice);
-//        NewBoardState newBoardState=new NewBoardState(binder.getMetaWearBoard(btDevice), newDeviceState);
-//        newDeviceState.connecting= true;
-//        newDeviceState.deviceNum=deviceConnectNum;
-//        connectedDevices.add(newDeviceState);
-//        stateToBoards.put(newDeviceState, newBoardState.newBoard);
-//        newBoardSetting(newBoardState.newBoard,newDeviceState);
-//        this.deviceConnectNum++;
+        DeviceState newDeviceState= new DeviceState(btDevice);
+        NewBoardState newBoardState=new NewBoardState(binder.getMetaWearBoard(btDevice), newDeviceState);
+        newDeviceState.connecting= true;
+        newDeviceState.deviceNum=deviceConnectionNum;
+        connectedDevices.add(newDeviceState);
+        stateToBoards.put(newDeviceState, newBoardState.newBoard);
+        newBoardSetting(newBoardState);
+        boardStateQueue.addNewBoard(newBoardState);
+        this.deviceConnectionNum++;
     }
 
     @Override
@@ -220,12 +208,12 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void handleStartSampling() {
         isSampling = true;
-        for (int i=0; i< accelerometer.size();i++){
-            accelerometer.get(i).packedAcceleration().start();
-            accelerometer.get(i).start();
+        for (int i=0; i<boardStateQueue.newBoardStateList.size();i++){
+            boardStateQueue.newBoardStateList.get(i).accelerometer.packedAcceleration().start();
+            boardStateQueue.newBoardStateList.get(i).accelerometer.start();
 
-            gyroBmi160.get(i).packedAngularVelocity().start();
-            gyroBmi160.get(i).start();
+            boardStateQueue.newBoardStateList.get(i).gyroBmi160.packedAngularVelocity().start();
+            boardStateQueue.newBoardStateList.get(i).gyroBmi160.start();
         }
 
         tsec=0;
@@ -233,12 +221,12 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     }
 
     public void handleStopSampling() {
-        for (int i=0; i< accelerometer.size();i++){
-            accelerometer.get(i).packedAcceleration().stop();
-            accelerometer.get(i).stop();
+        for (int i=0; i<boardStateQueue.newBoardStateList.size();i++){
+            boardStateQueue.newBoardStateList.get(i).accelerometer.packedAcceleration().stop();
+            boardStateQueue.newBoardStateList.get(i).accelerometer.stop();
 
-            gyroBmi160.get(i).packedAngularVelocity().stop();
-            gyroBmi160.get(i).stop();
+            boardStateQueue.newBoardStateList.get(i).gyroBmi160.packedAngularVelocity().stop();
+            boardStateQueue.newBoardStateList.get(i).gyroBmi160.stop();
         }
         isSampling = false;
 
@@ -249,11 +237,9 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
             //	update( );
             tsec++;
             mHandler.postDelayed(this,1000);
-            for (int i=0; i< accelerometer.size();i++){
-                newDeviceStateList.get(i).deviceTime=Integer.toString(tsec);
+            for (int i=0; i< boardStateQueue.newBoardStateList.size();i++){
+                boardStateQueue.newBoardStateList.get(i).newDeviceState.deviceTime=Integer.toString(tsec);
             }
-
-
         }
     };
     //-------------------------------------------------------------------------------------------------------
@@ -277,8 +263,8 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     {
         File[] dirs = ContextCompat.getExternalFilesDirs(getContext(), null);
         File removable = null;
-        na=new String[deviceConnectNum];
-        convert_FilePath=new String[deviceConnectNum];
+        na=new String[boardStateQueue.newBoardStateList.size()];
+        convert_FilePath=new String[boardStateQueue.newBoardStateList.size()];
 
         if (dirs.length > 0) {
             removable= dirs[0];
@@ -290,7 +276,7 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
             Date curDate = new Date(System.currentTimeMillis());//獲取當前時間
 
             String cur=formatter1.format(curDate);
-            for (int i=0; i<deviceConnectNum;i++){
+            for (int i=0; i<boardStateQueue.newBoardStateList.size();i++){
                 File test = new File(removable,cur.trim()+"_"+i+".txt");
                 File convertFile = new File(removable,cur.trim()+"_"+i+".csv");
                 try {
@@ -319,12 +305,12 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
             Log.e("r", na[i]);
             if (na[i]!=null){
                 OutputStream out;
-                Log.e("metaWear "+i, String.valueOf(metaWearDataBase.get(i).size()));
-                for (int j=0; j<metaWearDataBase.get(i).size(); j++){
+                Log.e("metaWear "+i, String.valueOf(boardStateQueue.newBoardStateList.get(i).metaWearDataflash.size()));
+                for (int j=0; j< boardStateQueue.newBoardStateList.get(i).metaWearDataflash.size(); j++){
                     try {
                         out = new BufferedOutputStream(new FileOutputStream(na[i], true));
-                        if (metaWearDataBase.get(i).get(j)!=null){
-                            out.write(metaWearDataBase.get(i).get(j).getBytes());
+                        if (boardStateQueue.newBoardStateList.get(i).metaWearDataflash.get(j)!=null){
+                            out.write(boardStateQueue.newBoardStateList.get(i).metaWearDataflash.get(j).getBytes());
                             out.write("\n".getBytes());
                         }
                         out.close();
@@ -400,7 +386,11 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     }
 
     //
-    private void metaWearSensor(Accelerometer accelerometer, GyroBmi160 gyroBmi160,DeviceState newDeviceState){
+    private void metaWearSensor(NewBoardState newBoardState){
+        Accelerometer accelerometer = newBoardState.accelerometer;
+        GyroBmi160 gyroBmi160 = newBoardState.gyroBmi160;
+        DeviceState newDeviceState = newBoardState.newDeviceState;
+
         // Setup Gyro
         gyroBmi160.packedAngularVelocity().stop();
         gyroBmi160.stop();
@@ -440,8 +430,8 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
                         String.format("%.6f", data.value(Acceleration.class).z()) ;
                 newDeviceState.deviceAccelerationRC=accl_entry;
                 String inputString = newDeviceState.deviceAccelerationRC+newDeviceState.deviceGYRORC+newDeviceState.deviceAngleRC;
-                metaWearDataBase.get(newDeviceState.deviceNum).add(inputString);
-                Log.e("MetaWear"+newDeviceState.deviceNum,metaWearDataBase.get(newDeviceState.deviceNum).get(metaWearDataBase.get(newDeviceState.deviceNum).size()-1));
+                newBoardState.metaWearDataflash.add(inputString);
+                Log.e("MetaWear",newBoardState.metaWearDataflash.get(newBoardState.metaWearDataflash.size()-1));
                 //------------------------------------------------------------------------------------------------------------------------------------
                 mHandler.obtainMessage(HANDLER_UPDATE_ACCELEROMETER_RESULT, data.value(Acceleration.class)).sendToTarget();
             }));
@@ -449,11 +439,13 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
 
     }
 
-    private void newBoardSetting(MetaWearBoard newBoard, DeviceState newDeviceState){
+    private void newBoardSetting(NewBoardState newBoardState){
+        MetaWearBoard newBoard=newBoardState.newBoard;
+        DeviceState newDeviceState=newBoardState.newDeviceState;
         newBoard.onUnexpectedDisconnect(status -> getActivity().runOnUiThread(() -> {
             connectedDevices.remove(newDeviceState);
-            this.deviceConnectNum--;
-            Log.e("Kenny","1111111,"+this.deviceConnectNum);
+            boardStateQueue.removeBoard(newBoardState);
+            Log.e("Kenny","1111111");
         }));
         //--------------------------------------------------------------------------------------------------------------------------------
         newBoard.connectAsync().onSuccessTask((Continuation<Void, Task<Route>>) task -> {
@@ -462,16 +454,13 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
                 connectedDevices.notifyDataSetChanged();
             });
 
-            newDeviceStateList.add(newDeviceState);
-            accelerometer.add(newBoard.getModule(Accelerometer.class));
+            newBoardState.accelerometer=newBoard.getModule(Accelerometer.class);
+            newBoardState.gyroBmi160=newBoard.getModule(GyroBmi160.class);
             Log.e("Kenny","accelerometer++");
-            gyroBmi160.add(newBoard.getModule(GyroBmi160.class));
             Log.e("Kenny","gyroBmi160++");
 
             int deviceNum=newDeviceStateList.size()-1;
-            List<String> metaWearDataflash = new ArrayList<>();
-            metaWearDataBase.add(metaWearDataflash);
-            Thread metaWear_setupThread=new metaWear_stepUpThread(deviceNum);
+            Thread metaWear_setupThread=new metaWear_stepUpThread(newBoardState);
             metaWear_setupThread.start();
 
             return null;
@@ -485,7 +474,7 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
                 if (!newBoard.isConnected()) {
                     getActivity().runOnUiThread(() -> {
                         connectedDevices.remove(newDeviceState);
-                        this.deviceConnectNum--;
+                        boardStateQueue.removeBoard(newBoardState);
                         Log.e("Kenny","22222222");
                     });
                 } else {
@@ -493,7 +482,7 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
                     newBoard.tearDown();
                     newBoard.disconnectAsync().continueWith((Continuation<Void, Void>) task1 -> {
                         connectedDevices.remove(newDeviceState);
-                        this.deviceConnectNum--;
+                        boardStateQueue.removeBoard(newBoardState);
                         Log.e("Kenny","33333333333");
                         return null;
                     });
@@ -507,14 +496,14 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
 
     class metaWear_stepUpThread extends Thread{
 
-        int deviceNum;
+        NewBoardState newBoardState;
 
-        metaWear_stepUpThread(int deviceNum){
-            this.deviceNum=deviceNum;
+        metaWear_stepUpThread(NewBoardState newBoardState){
+            this.newBoardState=newBoardState;
         }
 
         public void run(){
-            metaWearSensor(accelerometer.get(deviceNum),gyroBmi160.get(deviceNum),newDeviceStateList.get(deviceNum));
+            metaWearSensor(newBoardState);
         }
     }
 }
