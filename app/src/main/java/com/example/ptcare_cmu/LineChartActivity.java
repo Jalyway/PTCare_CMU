@@ -2,6 +2,7 @@ package com.example.ptcare_cmu;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 
 import com.anychart.AnyChart;
 import com.anychart.AnyChartView;
@@ -52,14 +53,20 @@ public class LineChartActivity extends AppCompatActivity {
 
         List<DataEntry> seriesData = new ArrayList<>();
 
+        //Log.e("resultNum",Download.trueMotion_s_id.toString());
+        for (int i=0; i<Download.trueMotion_s_id.length;i++){
+            Log.e("resultNum",Download.trueMotion_s_id[i]+"");
+        }
+
         for(int i=0;i<Download.result.size();i++)
-            seriesData.add(new CustomDataEntry(""+(i+1), Download.result.get(i), 0, 0));
+            seriesData.add(new CustomDataEntry(""+(i+1), Download.result.get(i), Download.trueMotion_s_id[i%Download.trueMotion_s_id.length], 0));
+            //seriesData.add(new CustomDataEntry(""+(i+1), Download.result.get(i), 0, 0));
 
 
         Set set = Set.instantiate();
         set.data(seriesData);
         Mapping series1Mapping = set.mapAs("{ x: 'x', value: 'value' }");
-        //Mapping series2Mapping = set.mapAs("{ x: 'x', value: 'value2' }");
+        Mapping series2Mapping = set.mapAs("{ x: 'x', value: 'value2' }");
         //Mapping series3Mapping = set.mapAs("{ x: 'x', value: 'value3' }");
 
         Line series1 = cartesian.line(series1Mapping);
@@ -74,8 +81,9 @@ public class LineChartActivity extends AppCompatActivity {
                 .offsetX(5d)
                 .offsetY(5d);
 
-        /*Line series2 = cartesian.line(series2Mapping);
-        series2.name("Whiskey");
+        /////////////////////////////////////////////////////////
+        Line series2 = cartesian.line(series2Mapping);
+        series2.name("正確動作");
         series2.hovered().markers().enabled(true);
         series2.hovered().markers()
                 .type(MarkerType.CIRCLE)
@@ -85,7 +93,7 @@ public class LineChartActivity extends AppCompatActivity {
                 .anchor(Anchor.LEFT_CENTER)
                 .offsetX(5d)
                 .offsetY(5d);
-*//*
+/*
         Line series3 = cartesian.line(series3Mapping);
         series3.name("Tequila");
         series3.hovered().markers().enabled(true);

@@ -19,6 +19,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.ParcelUuid;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -65,7 +66,7 @@ public class BleScanner extends Fragment {
     private String mParam2;
 
     //
-    public static final long DEFAULT_SCAN_PERIOD= 100000;
+    public static final long DEFAULT_SCAN_PERIOD= 60000;
     private static final int REQUEST_ENABLE_BT = 1, PERMISSION_REQUEST_COARSE_LOCATION= 2;
 
     TextView txtChange;
@@ -220,7 +221,6 @@ public class BleScanner extends Fragment {
                 ArrayList<BluetoothDevice> device_item=new ArrayList<>();
                 for(int i=0; i<listShow.size();i++){
                     device_item.add(scannedDevicesAdapter.getItem(Integer.valueOf(listShow.get(i))).btDevice);
-                    Toast.makeText(getContext(),String.valueOf(i),Toast.LENGTH_SHORT).show();
                 }
                 commBus.onDeviceSelected(device_item);
             }
@@ -251,9 +251,7 @@ public class BleScanner extends Fragment {
 
     private BluetoothAdapter.LeScanCallback deprecatedScanCallback= null;
     private ScanCallback api21ScallCallback= null;
-
     //
-
     @TargetApi(22)
     public void startBleScan() {
         if (!checkLocationPermission()) {

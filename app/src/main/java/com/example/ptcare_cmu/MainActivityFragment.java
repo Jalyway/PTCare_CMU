@@ -100,7 +100,6 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     private SQLiteDatabase sdb;
     private String mwMacAddress="000";
     private BoardStateQueue boardStateQueue=new BoardStateQueue();
-    public List<DeviceState> newDeviceStateList=new ArrayList<>();
     private int deviceConnectionNum=0;
 
     private final static int HANDLER_UPDATE_ACCELEROMETER_RESULT = 100;
@@ -209,11 +208,11 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     public void handleStartSampling() {
         isSampling = true;
         for (int i=0; i<boardStateQueue.newBoardStateList.size();i++){
-            boardStateQueue.newBoardStateList.get(i).accelerometer.packedAcceleration().start();
-            boardStateQueue.newBoardStateList.get(i).accelerometer.start();
-
             boardStateQueue.newBoardStateList.get(i).gyroBmi160.packedAngularVelocity().start();
             boardStateQueue.newBoardStateList.get(i).gyroBmi160.start();
+
+            boardStateQueue.newBoardStateList.get(i).accelerometer.packedAcceleration().start();
+            boardStateQueue.newBoardStateList.get(i).accelerometer.start();
         }
 
         tsec=0;
@@ -277,8 +276,13 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
 
             String cur=formatter1.format(curDate);
             for (int i=0; i<boardStateQueue.newBoardStateList.size();i++){
-                File test = new File(removable,cur.trim()+"_"+i+".txt");
-                File convertFile = new File(removable,cur.trim()+"_"+i+".csv");
+                File folder = new File(removable+"/"+cur.trim()+"_"+i);
+                if(!folder.exists()){// 如果資料夾不存在，創建一個
+                    folder.mkdirs();
+                } //而如果用.mkdir()方法則不會自動創建
+
+                File test = new File(folder.getPath(),cur.trim()+"_"+i+".txt");
+                File convertFile = new File(folder.getPath(),cur.trim()+"_"+i+".csv");
                 try {
                     test.createNewFile(); // Throws the exception mentioned above
                     convertFile.createNewFile();
@@ -299,7 +303,6 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     //
     public void data2file(){
         createSysDir();
-//        Log.e("Kenny",String.valueOf(angvL.size()));
 //
         for (int i=0;i<na.length;i++){
             Log.e("r", na[i]);
@@ -445,7 +448,6 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
         newBoard.onUnexpectedDisconnect(status -> getActivity().runOnUiThread(() -> {
             connectedDevices.remove(newDeviceState);
             boardStateQueue.removeBoard(newBoardState);
-            Log.e("Kenny","1111111");
         }));
         //--------------------------------------------------------------------------------------------------------------------------------
         newBoard.connectAsync().onSuccessTask((Continuation<Void, Task<Route>>) task -> {
@@ -459,7 +461,6 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
             Log.e("Kenny","accelerometer++");
             Log.e("Kenny","gyroBmi160++");
 
-            int deviceNum=newDeviceStateList.size()-1;
             Thread metaWear_setupThread=new metaWear_stepUpThread(newBoardState);
             metaWear_setupThread.start();
 
@@ -475,7 +476,6 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
                     getActivity().runOnUiThread(() -> {
                         connectedDevices.remove(newDeviceState);
                         boardStateQueue.removeBoard(newBoardState);
-                        Log.e("Kenny","22222222");
                     });
                 } else {
                     Snackbar.make(getActivity().findViewById(R.id.activity_main_layout), task.getError().getLocalizedMessage(), Snackbar.LENGTH_SHORT).show();
@@ -483,7 +483,6 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
                     newBoard.disconnectAsync().continueWith((Continuation<Void, Void>) task1 -> {
                         connectedDevices.remove(newDeviceState);
                         boardStateQueue.removeBoard(newBoardState);
-                        Log.e("Kenny","33333333333");
                         return null;
                     });
                 }

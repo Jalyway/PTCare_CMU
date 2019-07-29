@@ -30,13 +30,18 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
 
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 
 import FISmain.FISMotionSample;
 
 public class Download extends MainActivity {
+    public static int[] trueMotion_s_id;
     public static List<Double> result;
     private static final int PICK_FILE_REQUEST = 1;
     private String selectedFilePath;
@@ -47,7 +52,9 @@ public class Download extends MainActivity {
     private TextView tvResult,fileName;
     String str = "偵測結果\n";
     private boolean connected = false;
-    private String[] motions = {"請選擇","flex_ext","ABD ADD","int_ext_rot","pron_supin","rad_uln_dev"};
+    private String[] motions = {"請選擇","flex_ext","ABD_ADD","int_ext_rot","pron_supin","rad_uln_dev"};
+    private String[] fis_motions = {"請選擇","flex_ext.fis","ABD_ADD.fis","int_ext_rot.fis","pron_supin.fis","rad_uln_dev.fis"};
+    private String[] criteria_motions = {"請選擇","motionCriteria_FE.txt","motionCriteria_ABD.txt","motionCriteria_ERIR.txt","motionCriteria_pron.txt","motionCriteria_ul.ra.txt"};
 
     Thread subThread;
 
@@ -128,7 +135,7 @@ public class Download extends MainActivity {
 
     public void downloadBtnLTR(View v) {
 
-        if (! fileName.getText().toString().equals("")) {
+        if (! fileName.getText().toString().equals("") && !sprMotion.getSelectedItem().toString().equals(motions[0])) {
             download_Btn.setEnabled(false);
             tvResult.setText("資料判斷中\n");
             progressBar.setVisibility(View.VISIBLE);
@@ -139,13 +146,13 @@ public class Download extends MainActivity {
                 @Override
                 public void run() {
                     try {
-                        get = new HttpGet("http://140.128.65.114:8000/PRRFISHome/PTC/fis/T01_motionCriteria_FE.txt");
+                        get = new HttpGet("http://140.128.65.114:8000/PRRFISHome/PTC/fis/T01_"+criteria_motions[sprMotion.getSelectedItemPosition()]);
                         response = httpClient.execute(get);
                         resEntity = response.getEntity();
                         writer = EntityUtils.toString(resEntity);
 
                         try{
-                            FileWriter fw = new FileWriter("/data/data/com.example.ptcare_cmu/T01_motionCriteria_FE.txt", false);
+                            FileWriter fw = new FileWriter("/data/data/com.example.ptcare_cmu/motionCriteria.txt", false);
                             BufferedWriter bw = new BufferedWriter(fw); //將BufferedWeiter與FileWrite物件做連結
                             bw.write(writer);
                             bw.newLine();
@@ -158,7 +165,7 @@ public class Download extends MainActivity {
                     }
                     //
                     try {
-                        get = new HttpGet("http://140.128.65.114:8000/PRRFISHome/PTC/fis/motionGuide1.txt");
+                        get = new HttpGet("http://140.128.65.114:8000/PRRFISHome/PTC/fis/T01_motionGuide.txt");
                         response = httpClient.execute(get);
                         resEntity = response.getEntity();
                         writer = EntityUtils.toString(resEntity);
@@ -177,12 +184,12 @@ public class Download extends MainActivity {
                     }
                     //
                     try {
-                        get = new HttpGet("http://140.128.65.114:8000/PRRFISHome/PTC/fis/T01_flex_ext.fis");
+                        get = new HttpGet("http://140.128.65.114:8000/PRRFISHome/PTC/fis/T01_"+fis_motions[sprMotion.getSelectedItemPosition()]);
                         response = httpClient.execute(get);
                         resEntity = response.getEntity();
                         writer = EntityUtils.toString(resEntity);
                         try{
-                            FileWriter fw = new FileWriter("/data/data/com.example.ptcare_cmu/T01_flex_ext.fis", false);
+                            FileWriter fw = new FileWriter("/data/data/com.example.ptcare_cmu/"+fis_motions[sprMotion.getSelectedItemPosition()], false);
                             BufferedWriter bw = new BufferedWriter(fw); //將BufferedWeiter與FileWrite物件做連結
                             bw.write(writer);
                             bw.newLine();
@@ -193,12 +200,45 @@ public class Download extends MainActivity {
                     }catch(Exception e) {
                         Log.i("mytag", e.toString());
                     }
+                    //---------------------------------------------------------------------------------------------------------------------------------
+                    try {
+                        Scanner sc2 = new Scanner(new File("/data/data/com.example.ptcare_cmu/motionGuide1.txt"));
+                        ArrayList motList = new ArrayList();
+                        while(sc2.hasNext()) {
+                            String[] motIDs = sc2.nextLine().split("\\|");
+                            motList.add(motIDs);
+                        }
+                        Scanner sc = new Scanner(new File("/data/data/com.example.ptcare_cmu/motionCriteria.txt"));
+                        int motionCycle = Integer.parseInt(sc.nextLine());
+                        String[] mot_do = sc.nextLine().split("\\|");
+                        String[] strSchedule = sc.nextLine().split(",");    //總秒數為最後一個index >>  strSchedule[strSchedule.size()-1]
+                        trueMotion_s_id=new int[Integer.parseInt(strSchedule[strSchedule.length-1])];     //記錄每一秒應該要是甚麼動作，也就是說index1>>第1秒時正在執行的動作代碼
+                        int[] mot_idx_match_to_id=new int[mot_do.length];
+                        for(int i = 0; i < mot_do.length; ++i) {
+                            for(int j = 0; j < motList.size(); ++j) {
+                                String[] motIDs = (String[])motList.get(j);
+                                if (mot_do[i].equals(motIDs[0])) {
+                                    mot_idx_match_to_id[i] =Integer.parseInt(motIDs[1]);
+                                    break;
+                                }
+                            }
+                        }
+                        for(int times =0;times<motionCycle;times++) {           //以下動作重複次數
+                            for (int diff_motion = 0; diff_motion < mot_idx_match_to_id.length; diff_motion++) {
+                                for (int current_t = Integer.parseInt(strSchedule[diff_motion]); current_t < Integer.parseInt(strSchedule[diff_motion + 1]); current_t++)
+                                    trueMotion_s_id[current_t] = mot_idx_match_to_id[diff_motion];
+                            }
+                        }
+                        Log.e("resultNum","");
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                    }
                     //-------------------------------------------------------------------------
                     FISMotionSample fisMotionSample=new FISMotionSample();
-                    result=fisMotionSample.Recognition("/data/data/com.example.ptcare_cmu/T01_flex_ext.fis",
-                            "/storage/emulated/0/Android/data/com.example.ptcare_cmu/files/"+fileName.getText(),///data/data/com.example.ptcare_cmu/ExtFlexMotionTest.csv
+                    result=fisMotionSample.Recognition("/data/data/com.example.ptcare_cmu/"+fis_motions[sprMotion.getSelectedItemPosition()],
+                            "/storage/emulated/0/Android/data/com.example.ptcare_cmu/files/"+fileName.getText().toString().split("\\.")[0]+"/"+fileName.getText(),///data/data/com.example.ptcare_cmu/ExtFlexMotionTest.csv
                             "/data/data/com.example.ptcare_cmu/motionGuide1.txt",
-                            "/data/data/com.example.ptcare_cmu/T01_motionCriteria_FE.txt");
+                            "/data/data/com.example.ptcare_cmu/motionCriteria.txt");
                     for(int i=0; i<result.size(); i++) {
                         Log.e("Kenny", String.valueOf(result.get(i)));
                         str += result.get(i)+"\n";
@@ -225,7 +265,7 @@ public class Download extends MainActivity {
             //Toast.makeText(getApplicationContext(),"結果:\n"+str,Toast.LENGTH_SHORT).show();
         }
         else
-            Toast.makeText(this,"請輸入檔案名稱",Toast.LENGTH_SHORT).show();
+            Toast.makeText(this,"請輸入檔案名稱及辨識動作",Toast.LENGTH_SHORT).show();
 
     }
 
