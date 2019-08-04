@@ -146,7 +146,7 @@ public class Download extends MainActivity {
                 @Override
                 public void run() {
                     try {
-                        get = new HttpGet("http://140.128.65.114:8000/PRRFISHome/PTC/fis/T01_"+criteria_motions[sprMotion.getSelectedItemPosition()]);
+                        get = new HttpGet("http://192.168.43.181:8084/PRRFISHome/PTC/fis/T01_"+criteria_motions[sprMotion.getSelectedItemPosition()]);
                         response = httpClient.execute(get);
                         resEntity = response.getEntity();
                         writer = EntityUtils.toString(resEntity);
@@ -165,7 +165,7 @@ public class Download extends MainActivity {
                     }
                     //
                     try {
-                        get = new HttpGet("http://140.128.65.114:8000/PRRFISHome/PTC/fis/T01_motionGuide.txt");
+                        get = new HttpGet("http://192.168.43.181:8084/PRRFISHome/PTC/fis/T01_motionGuide.txt");
                         response = httpClient.execute(get);
                         resEntity = response.getEntity();
                         writer = EntityUtils.toString(resEntity);
@@ -184,7 +184,7 @@ public class Download extends MainActivity {
                     }
                     //
                     try {
-                        get = new HttpGet("http://140.128.65.114:8000/PRRFISHome/PTC/fis/T01_"+fis_motions[sprMotion.getSelectedItemPosition()]);
+                        get = new HttpGet("http://192.168.43.181:8084/PRRFISHome/PTC/fis/T01_"+fis_motions[sprMotion.getSelectedItemPosition()]);
                         response = httpClient.execute(get);
                         resEntity = response.getEntity();
                         writer = EntityUtils.toString(resEntity);

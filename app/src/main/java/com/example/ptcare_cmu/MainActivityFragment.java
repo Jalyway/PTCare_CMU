@@ -186,11 +186,14 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
     //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     private void CalculateAngle(Acceleration AccelerationData,DeviceState newDeviceState)
     {
-        double Denominator = Math.sqrt(Math.pow(AccelerationData.x(), 2) + Math.pow(AccelerationData.y(), 2) + Math.pow(AccelerationData.z(), 2));
+        double AngleX = Math.atan(AccelerationData.x()/Math.sqrt(AccelerationData.y()*AccelerationData.y()+AccelerationData.z()*AccelerationData.z()));
+        double AngleY = Math.atan(AccelerationData.y()/Math.sqrt(AccelerationData.x()*AccelerationData.x()+AccelerationData.z()*AccelerationData.z()));
+        double AngleZ = Math.atan(AccelerationData.z()/Math.sqrt(AccelerationData.y()*AccelerationData.y()+AccelerationData.x()*AccelerationData.x()));
 
-        double AngleX = CalculateAngle(AccelerationData.x(), Denominator);
-        double AngleY = CalculateAngle(AccelerationData.y(), Denominator);
-        double AngleZ = CalculateAngle(AccelerationData.z(), Denominator);
+        AngleX=Math.toDegrees(AngleX);
+        AngleY=Math.toDegrees(AngleY);
+        AngleZ=Math.toDegrees(AngleZ);
+
         String ans="(x:\t"+ String.format("%.3f", AngleX) + "g, " +
                 "y:\t" + String.format("%.3f", AngleY) + "g, " +
                 "z:\t" + String.format("%.3f", AngleZ) + "g)";
@@ -198,12 +201,6 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
         String ang_entry=","+AngleX+","+AngleY+","+AngleZ;
         newDeviceState.deviceAngleRC=ang_entry;
     }
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////-----------------------CalculateAngle
-    private double CalculateAngle(float Value, double Denominator)      //使用弧度計算角度
-    {
-        double Radian = Math.acos(Value / Denominator);
-        return ((Radian * (double)180) / Math.PI);
-    } // end CalculateAngleByRadian
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void handleStartSampling() {
         isSampling = true;

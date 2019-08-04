@@ -59,15 +59,15 @@ public class LineChartActivity extends AppCompatActivity {
         }
 
         for(int i=0;i<Download.result.size();i++)
-            seriesData.add(new CustomDataEntry(""+(i+1), Download.result.get(i), Download.trueMotion_s_id[i%Download.trueMotion_s_id.length], 0));
+            seriesData.add(new CustomDataEntry(""+(i+1), Download.result.get(i),0, Download.trueMotion_s_id[i%Download.trueMotion_s_id.length]));
             //seriesData.add(new CustomDataEntry(""+(i+1), Download.result.get(i), 0, 0));
 
 
         Set set = Set.instantiate();
         set.data(seriesData);
         Mapping series1Mapping = set.mapAs("{ x: 'x', value: 'value' }");
-        Mapping series2Mapping = set.mapAs("{ x: 'x', value: 'value2' }");
-        //Mapping series3Mapping = set.mapAs("{ x: 'x', value: 'value3' }");
+        //Mapping series2Mapping = set.mapAs("{ x: 'x', value: 'value2' }");
+        Mapping series3Mapping = set.mapAs("{ x: 'x', value: 'value3' }");
 
         Line series1 = cartesian.line(series1Mapping);
         series1.name("動作分辨");
@@ -82,7 +82,7 @@ public class LineChartActivity extends AppCompatActivity {
                 .offsetY(5d);
 
         /////////////////////////////////////////////////////////
-        Line series2 = cartesian.line(series2Mapping);
+        /*Line series2 = cartesian.line(series2Mapping);
         series2.name("正確動作");
         series2.hovered().markers().enabled(true);
         series2.hovered().markers()
@@ -93,9 +93,10 @@ public class LineChartActivity extends AppCompatActivity {
                 .anchor(Anchor.LEFT_CENTER)
                 .offsetX(5d)
                 .offsetY(5d);
-/*
+*/
         Line series3 = cartesian.line(series3Mapping);
-        series3.name("Tequila");
+        series3.name("正確動作");
+        series3.stroke("red",2, "8 8 8 8 8","bevel","round");
         series3.hovered().markers().enabled(true);
         series3.hovered().markers()
                 .type(MarkerType.CIRCLE)
@@ -105,7 +106,7 @@ public class LineChartActivity extends AppCompatActivity {
                 .anchor(Anchor.LEFT_CENTER)
                 .offsetX(5d)
                 .offsetY(5d);
-*/
+
         cartesian.legend().enabled(true);
         cartesian.legend().fontSize(13d);
         cartesian.legend().padding(0d, 0d, 10d, 0d);
