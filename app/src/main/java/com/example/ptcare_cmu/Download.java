@@ -28,17 +28,21 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
 import FISmain.FISMotionSample;
+import MotionAnalysis.DataTransfer;
 
 public class Download extends MainActivity {
     public static int[] trueMotion_s_id;
@@ -55,6 +59,11 @@ public class Download extends MainActivity {
     private String[] motions = {"請選擇","flex_ext","ABD_ADD","int_ext_rot","pron_supin","rad_uln_dev"};
     private String[] fis_motions = {"請選擇","flex_ext.fis","ABD_ADD.fis","int_ext_rot.fis","pron_supin.fis","rad_uln_dev.fis"};
     private String[] criteria_motions = {"請選擇","motionCriteria_FE.txt","motionCriteria_ABD.txt","motionCriteria_ERIR.txt","motionCriteria_pron.txt","motionCriteria_ul.ra.txt"};
+    private String inSide_filePath="/data/data/com.example.ptcare_cmu/";
+    private String inSD_filePath="/storage/emulated/0/Android/data/com.example.ptcare_cmu/files/";
+    private String Critieria_Addr="";
+    private String FIS_Addr="";
+    private String Guide_Addr="";
 
     Thread subThread;
 
@@ -69,6 +78,7 @@ public class Download extends MainActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.download);
         //
+        propertySetting();
         userName = findViewById(R.id.userName);
         fileName = findViewById(R.id.fileName);
         sprMotion = findViewById(R.id.sprMotion);
@@ -146,13 +156,13 @@ public class Download extends MainActivity {
                 @Override
                 public void run() {
                     try {
-                        get = new HttpGet("http://192.168.43.181:8084/PRRFISHome/PTC/fis/T01_"+criteria_motions[sprMotion.getSelectedItemPosition()]);
+                        get = new HttpGet(Critieria_Addr+criteria_motions[sprMotion.getSelectedItemPosition()]);
                         response = httpClient.execute(get);
                         resEntity = response.getEntity();
                         writer = EntityUtils.toString(resEntity);
 
                         try{
-                            FileWriter fw = new FileWriter("/data/data/com.example.ptcare_cmu/motionCriteria.txt", false);
+                            FileWriter fw = new FileWriter(inSide_filePath+"motionCriteria.txt", false);
                             BufferedWriter bw = new BufferedWriter(fw); //將BufferedWeiter與FileWrite物件做連結
                             bw.write(writer);
                             bw.newLine();
@@ -165,13 +175,13 @@ public class Download extends MainActivity {
                     }
                     //
                     try {
-                        get = new HttpGet("http://192.168.43.181:8084/PRRFISHome/PTC/fis/T01_motionGuide.txt");
+                        get = new HttpGet(Guide_Addr);
                         response = httpClient.execute(get);
                         resEntity = response.getEntity();
                         writer = EntityUtils.toString(resEntity);
 
                         try{
-                            FileWriter fw = new FileWriter("/data/data/com.example.ptcare_cmu/motionGuide1.txt", false);
+                            FileWriter fw = new FileWriter(inSide_filePath+"motionGuide1.txt", false);
                             BufferedWriter bw = new BufferedWriter(fw); //將BufferedWeiter與FileWrite物件做連結
                             bw.write(writer);
                             bw.newLine();
@@ -184,12 +194,12 @@ public class Download extends MainActivity {
                     }
                     //
                     try {
-                        get = new HttpGet("http://192.168.43.181:8084/PRRFISHome/PTC/fis/T01_"+fis_motions[sprMotion.getSelectedItemPosition()]);
+                        get = new HttpGet(FIS_Addr+fis_motions[sprMotion.getSelectedItemPosition()]);
                         response = httpClient.execute(get);
                         resEntity = response.getEntity();
                         writer = EntityUtils.toString(resEntity);
                         try{
-                            FileWriter fw = new FileWriter("/data/data/com.example.ptcare_cmu/"+fis_motions[sprMotion.getSelectedItemPosition()], false);
+                            FileWriter fw = new FileWriter(inSide_filePath+fis_motions[sprMotion.getSelectedItemPosition()], false);
                             BufferedWriter bw = new BufferedWriter(fw); //將BufferedWeiter與FileWrite物件做連結
                             bw.write(writer);
                             bw.newLine();
@@ -202,13 +212,13 @@ public class Download extends MainActivity {
                     }
                     //---------------------------------------------------------------------------------------------------------------------------------
                     try {
-                        Scanner sc2 = new Scanner(new File("/data/data/com.example.ptcare_cmu/motionGuide1.txt"));
+                        Scanner sc2 = new Scanner(new File(inSide_filePath+"motionGuide1.txt"));
                         ArrayList motList = new ArrayList();
                         while(sc2.hasNext()) {
                             String[] motIDs = sc2.nextLine().split("\\|");
                             motList.add(motIDs);
                         }
-                        Scanner sc = new Scanner(new File("/data/data/com.example.ptcare_cmu/motionCriteria.txt"));
+                        Scanner sc = new Scanner(new File(inSide_filePath+"motionCriteria.txt"));
                         int motionCycle = Integer.parseInt(sc.nextLine());
                         String[] mot_do = sc.nextLine().split("\\|");
                         String[] strSchedule = sc.nextLine().split(",");    //總秒數為最後一個index >>  strSchedule[strSchedule.size()-1]
@@ -233,12 +243,44 @@ public class Download extends MainActivity {
                     } catch (FileNotFoundException e) {
                         e.printStackTrace();
                     }
+                    //---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                    DataTransfer dataTransfer=new DataTransfer();
+                    String[] inputFeature=new String[2];
+                    try {
+                        switch (sprMotion.getSelectedItemPosition()){
+                            case 1:
+                                inputFeature[0]="ANGVx";
+                                inputFeature[1]="ANGx";
+                                break;
+                            case 2:
+                                inputFeature[0]="ANGVx";
+                                inputFeature[1]="ANGx";
+                                break;
+                            case 3:
+                                inputFeature[0]="ANGVx";
+                                inputFeature[1]="ANGx";
+                                break;
+                            case 4:
+                                inputFeature[0]="ANGVy";
+                                inputFeature[1]="ANGVx";
+                                break;
+                            case 5:
+                                inputFeature[0]="ANGVz";
+                                inputFeature[1]="ANGz";
+                                break;
+                        }
+                        dataTransfer.DataTransferFactory(inSD_filePath+fileName.getText().toString().split("\\.")[0]+"/"+fileName.getText().toString().substring(0,fileName.getText().toString().lastIndexOf("."))+".txt",
+                                inSD_filePath+fileName.getText().toString().split("\\.")[0]+"/"+fileName.getText().toString().substring(0,fileName.getText().toString().lastIndexOf("."))+".csv",
+                                        inputFeature);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                     //-------------------------------------------------------------------------
                     FISMotionSample fisMotionSample=new FISMotionSample();
-                    result=fisMotionSample.Recognition("/data/data/com.example.ptcare_cmu/"+fis_motions[sprMotion.getSelectedItemPosition()],
-                            "/storage/emulated/0/Android/data/com.example.ptcare_cmu/files/"+fileName.getText().toString().split("\\.")[0]+"/"+fileName.getText(),///data/data/com.example.ptcare_cmu/ExtFlexMotionTest.csv
-                            "/data/data/com.example.ptcare_cmu/motionGuide1.txt",
-                            "/data/data/com.example.ptcare_cmu/motionCriteria.txt");
+                    result=fisMotionSample.Recognition(inSide_filePath+fis_motions[sprMotion.getSelectedItemPosition()],
+                            inSD_filePath+fileName.getText().toString().split("\\.")[0]+"/"+fileName.getText(),///data/data/com.example.ptcare_cmu/ExtFlexMotionTest.csv
+                            inSide_filePath+"motionGuide1.txt",
+                            inSide_filePath+"motionCriteria.txt");
                     for(int i=0; i<result.size(); i++) {
                         Log.e("Kenny", String.valueOf(result.get(i)));
                         str += result.get(i)+"\n";
@@ -307,11 +349,34 @@ public class Download extends MainActivity {
 
                 if (selectedFilePath!=null && !selectedFilePath.equals("")) {
                     String filename = selectedFilePath.substring(selectedFilePath.lastIndexOf("/") + 1);
+                    Log.e("selectedFilePath",selectedFilePath);
                     fileName.setText(filename);  //只顯示檔名
                 }
                 else
                     Toast.makeText(this, "Cannot upload file to server ", Toast.LENGTH_LONG).show();
             }
         }
+    }
+    //------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    private void propertySetting(){
+        try {
+            InputStreamReader inputReader = new InputStreamReader( getResources().getAssets().open("property.txt") );
+            BufferedReader bufReader = new BufferedReader(inputReader);
+            String line="";
+            String Result="";
+            while((line = bufReader.readLine()) != null) {
+                Result += line;
+            }
+            //----------------------------------------------------------------------------------------------------------------------
+            this.Critieria_Addr=new JSONObject(new JSONObject(new JSONObject(Result).getString("Address")).getString("download")).getString("MotionCritieria");
+            Log.e("Critieria_Addr",Critieria_Addr);
+            this.Guide_Addr=new JSONObject(new JSONObject(new JSONObject(Result).getString("Address")).getString("download")).getString("MotionGuide");
+            Log.e("Guide_Addr",Guide_Addr);
+            this.FIS_Addr=new JSONObject(new JSONObject(new JSONObject(Result).getString("Address")).getString("download")).getString("MotionFIS");
+            Log.e("Critieria_Addr",FIS_Addr);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
     }
 }

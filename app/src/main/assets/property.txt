@@ -1,0 +1,14 @@
+{
+	"Address":{
+		"upload":{
+			"OriginalData":"",
+			"ConvertData":"",
+			"resultImg":""
+		},
+		"download":{
+			"MotionCritieria":"http://140.128.65.114:8000/PRRFISHome/PTC/fis/T01_",
+			"MotionFIS":"http://140.128.65.114:8000/PRRFISHome/PTC/fis/T01_",
+			"MotionGuide":"http://140.128.65.114:8000/PRRFISHome/PTC/fis/T01_motionGuide.txt"
+		}
+	}
+}
