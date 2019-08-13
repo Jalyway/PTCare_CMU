@@ -323,16 +323,13 @@ public class Download extends MainActivity {
     //
     private void showFileChooser() {
         Intent intent = new Intent();
-        // sets the select file to all types of files
-        intent.setType("text/*"); // file/* 改
-        // intent.setType("*/*"); // file/* 改
+        intent.setType("text/*");  // sets the select file to all types of files
         intent.addCategory(Intent.CATEGORY_OPENABLE);
-        // allows to select data and return it
         intent.setAction(Intent.ACTION_GET_CONTENT);
-        // starts new activity to select file and return data
         startActivityForResult(Intent.createChooser(intent, "Choose File to Upload.."), PICK_FILE_REQUEST);
     }
-//--------------------------------------------------------------------------------------------------------------
+
+    //--------------------------------------------------------------------------------------------------------------
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);

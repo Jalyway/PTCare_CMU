@@ -1,9 +1,9 @@
 {
 	"Address":{
 		"upload":{
-			"OriginalData":"",
-			"ConvertData":"",
-			"resultImg":""
+			"OriginalData":"http://140.128.65.114:8000/PRRFISHome/PTC/uploadc.jsp",
+			"ConvertData":"http://140.128.65.114:8000/PRRFISHome/PTC/uploadc.jsp",
+			"ResultImg":"http://140.128.65.114:8000/PRRFISHome/PTC/uploadc.jsp"
 		},
 		"download":{
 			"MotionCritieria":"http://140.128.65.114:8000/PRRFISHome/PTC/fis/T01_",
