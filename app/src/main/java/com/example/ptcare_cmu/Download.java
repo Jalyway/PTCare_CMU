@@ -92,7 +92,6 @@ public class Download extends MainActivity {
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.support_simple_spinner_dropdown_item, motions);
         sprMotion.setAdapter(adapter);
         sprMotion.setOnItemSelectedListener(selectedListener);
-
         chooseFile_Btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -134,7 +133,10 @@ public class Download extends MainActivity {
             if (message.what == 1) {
                 progressBar.setVisibility(View.GONE);
                 tvResult.setText(message.obj.toString());
-
+                download_Btn.setEnabled(true);
+                sprMotion.setSelection(0);
+                fileName.setText("");
+                selectedFilePath="";
                 Intent intent = new Intent(getApplicationContext(), LineChartActivity.class);
                 startActivity(intent);
             }
@@ -228,7 +230,7 @@ public class Download extends MainActivity {
                             for(int j = 0; j < motList.size(); ++j) {
                                 String[] motIDs = (String[])motList.get(j);
                                 if (mot_do[i].equals(motIDs[0])) {
-                                    mot_idx_match_to_id[i] =Integer.parseInt(motIDs[1]);
+                                    mot_idx_match_to_id[i] =Integer.parseInt(motIDs[1].split("\\s")[0]);
                                     break;
                                 }
                             }
