@@ -321,69 +321,6 @@ public class MainActivityFragment extends Fragment implements ServiceConnection 
             }
         }
     }
-    //檔案寫入DB
-    public void f2d() {
-        //--------------------------------------------------------------------------------------------------------------------------------------------------------
-        //  sdb = dbhelper.getWritableDatabase();
-        //   dbhelper.openDatabase();
-        for (int i=0;i<na.length;i++) {
-            sdb = dbhelper.getWritableDatabase();
-
-            sdb.delete("jy61_record",null,null);
-            try {
-                InputStreamReader isr = new InputStreamReader(new FileInputStream(na[i]));//檔案讀取路徑
-                BufferedReader reader = new BufferedReader(isr);
-                String line = null;
-                String rectime=na[i].substring(na[i].lastIndexOf("/"));
-
-                if (sdb != null) {
-                    if (sdb.isOpen()) {
-                        while ((line = reader.readLine()) != null) {
-                            String item[] = line.split(",");
-                            //  Log.d("length: ",String.valueOf(item.length));
-
-                            String sql = "insert into jy61_record (device_name,start_time,accx,accy,accz,angvx,angvy,angvz,angx,angy,angz ) " +
-                                    "values (?, ?, ?, ?,?, ?, ?, ?,?, ?, ?);";
-                            if(item.length==9){
-
-                                sdb.beginTransaction();
-                                SQLiteStatement stmt = sdb.compileStatement(sql);
-
-                                //  for (int i = 0; i < insert_db; i++) {
-                                stmt.bindString(1, mwMacAddress);
-                                stmt.bindString(2, rectime.substring(1));
-                                stmt.bindString(3, item[0].trim());
-                                stmt.bindString(4, item[1].trim());
-                                stmt.bindString(5, item[2].trim());
-                                stmt.bindString(6, item[3].trim());
-                                stmt.bindString(7, item[4].trim());
-                                stmt.bindString(8, item[5].trim());
-                                stmt.bindString(9, item[6].trim());
-                                stmt.bindString(10, item[7].trim());
-                                stmt.bindString(11, item[8].trim());
-
-                                long entryID = stmt.executeInsert();
-
-                                stmt.clearBindings();
-                                sdb.setTransactionSuccessful();
-                                sdb.endTransaction();
-                            }
-                        }
-                    }
-                }
-                sdb.close();  //可自行變化成存入陣列或arrayList方便之後存取
-            } catch(IOException e) {
-                e.printStackTrace();
-            }
-            db2CSV(i);
-        }
-    }
-
-//    檔案輸出成csv
-    public void db2CSV(int i){
-        DataTransfer dataTransfer=new DataTransfer();
-        dataTransfer.calMotion(convert_FilePath[i],getContext());
-    }
 
     //
     private void metaWearSensor(NewBoardState newBoardState){

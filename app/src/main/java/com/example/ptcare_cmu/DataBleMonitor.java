@@ -188,7 +188,6 @@ public class DataBleMonitor extends AppCompatActivity {
         public void run(){
             ((MainActivityFragment) fragment).handleStopSampling();
             ((MainActivityFragment) fragment).data2file();
-//            ((MainActivityFragment) fragment).f2d();
             progressLoad_dialog.dismiss();
             finish();
             startActivity(new Intent(getApplicationContext(), Download.class));
